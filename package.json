@@ -1,0 +1,45 @@
+{
+  "name": "asset-management-system",
+  "version": "1.0.0",
+  "description": "Complete Asset Management System with React Frontend and Node.js Backend",
+  "scripts": {
+    "start": "concurrently \"npm run start:backend\" \"npm run start:frontend\"",
+    "start:backend": "cd backend && npm start",
+    "start:frontend": "cd frontend && npm start",
+    "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
+    "dev:backend": "cd backend && npm run dev",
+    "dev:frontend": "cd frontend && npm start",
+    "install:all": "npm install && cd backend && npm install && cd ../frontend && npm install",
+    "setup": "cd backend && npm run setup",
+    "seed": "cd backend && npm run seed",
+    "build": "cd frontend && npm run build",
+    "test": "echo \"Tests not implemented yet\" && exit 0"
+  },
+  "keywords": [
+    "asset-management",
+    "react",
+    "nodejs",
+    "express",
+    "mongodb",
+    "fullstack",
+    "dashboard",
+    "inventory"
+  ],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  },
+  "engines": {
+    "node": ">=14.0.0",
+    "npm": ">=6.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": ""
+  },
+  "bugs": {
+    "url": ""
+  },
+  "homepage": ""
+}
