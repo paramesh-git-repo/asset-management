@@ -46,6 +46,9 @@ const EmployeeModal = ({ show, onHide, onSave, employee, departments, roles, cat
   const [showPositionDropdown, setShowPositionDropdown] = useState(false);
   const [showEmployeeStatusDropdown, setShowEmployeeStatusDropdown] = useState(false);
   
+  // Hire date input mode
+  const [hireDateInputMode, setHireDateInputMode] = useState('date'); // 'date' or 'text'
+  
   // Handle category selection from custom dropdown
   const handleCategorySelect = (categoryValue) => {
     setAssetFormData(prev => ({
@@ -94,6 +97,59 @@ const EmployeeModal = ({ show, onHide, onSave, employee, departments, roles, cat
       setErrors(prev => ({
         ...prev,
         position: ''
+      }));
+    }
+  };
+
+  // Handle hire date input mode toggle
+  const toggleHireDateInputMode = () => {
+    const newMode = hireDateInputMode === 'date' ? 'text' : 'date';
+    setHireDateInputMode(newMode);
+    
+    // Clear any existing hire date errors when switching modes
+    if (errors.hireDate) {
+      setErrors(prev => ({
+        ...prev,
+        hireDate: ''
+      }));
+    }
+  };
+
+  // Handle hire date text input with validation
+  const handleHireDateTextChange = (e) => {
+    const value = e.target.value;
+    setFormData(prev => ({
+      ...prev,
+      hireDate: value
+    }));
+
+    // Validate date format for text input
+    if (value && hireDateInputMode === 'text') {
+      const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+      if (!dateRegex.test(value)) {
+        setErrors(prev => ({
+          ...prev,
+          hireDate: 'Please enter date in YYYY-MM-DD format'
+        }));
+      } else {
+        // Check if it's a valid date
+        const date = new Date(value);
+        if (isNaN(date.getTime())) {
+          setErrors(prev => ({
+            ...prev,
+            hireDate: 'Please enter a valid date'
+          }));
+        } else {
+          setErrors(prev => ({
+            ...prev,
+            hireDate: ''
+          }));
+        }
+      }
+    } else if (hireDateInputMode === 'text') {
+      setErrors(prev => ({
+        ...prev,
+        hireDate: ''
       }));
     }
   };
@@ -871,15 +927,50 @@ const EmployeeModal = ({ show, onHide, onSave, employee, departments, roles, cat
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Hire Date *
                   </label>
-                  <input
-                    type="date"
-                    name="hireDate"
-                    value={formData.hireDate}
-                    onChange={handleInputChange}
-                    className={`w-full rounded-xl border px-4 py-3 transition-all duration-300 text-gray-900 bg-white focus:border-gray-800 focus:ring-4 focus:ring-gray-800/10 ${
-                      errors.hireDate ? 'border-red-500' : 'border-gray-300'
-                    }`}
-                  />
+                  
+                  {/* Input Mode Toggle */}
+                  <div className="flex items-center gap-2 mb-2">
+                    <button
+                      type="button"
+                      onClick={toggleHireDateInputMode}
+                      className={`px-3 py-1 text-xs rounded-lg transition-colors duration-200 ${
+                        hireDateInputMode === 'date' 
+                          ? 'bg-blue-100 text-blue-700 border border-blue-300' 
+                          : 'bg-gray-100 text-gray-600 border border-gray-300 hover:bg-gray-200'
+                      }`}
+                    >
+                      <i className={`fas ${hireDateInputMode === 'date' ? 'fa-calendar-alt' : 'fa-keyboard'} mr-1`}></i>
+                      {hireDateInputMode === 'date' ? 'Date Picker' : 'Manual Entry'}
+                    </button>
+                    <span className="text-xs text-gray-500">
+                      {hireDateInputMode === 'text' ? 'Format: YYYY-MM-DD' : 'Click to switch to manual entry'}
+                    </span>
+                  </div>
+
+                  {/* Date Input */}
+                  {hireDateInputMode === 'date' ? (
+                    <input
+                      type="date"
+                      name="hireDate"
+                      value={formData.hireDate}
+                      onChange={handleInputChange}
+                      className={`w-full rounded-xl border px-4 py-3 transition-all duration-300 text-gray-900 bg-white focus:border-gray-800 focus:ring-4 focus:ring-gray-800/10 ${
+                        errors.hireDate ? 'border-red-500' : 'border-gray-300'
+                      }`}
+                    />
+                  ) : (
+                    <input
+                      type="text"
+                      name="hireDate"
+                      value={formData.hireDate}
+                      onChange={handleHireDateTextChange}
+                      placeholder="YYYY-MM-DD (e.g., 2024-01-15)"
+                      className={`w-full rounded-xl border px-4 py-3 transition-all duration-300 text-gray-900 bg-white focus:border-gray-800 focus:ring-4 focus:ring-gray-800/10 ${
+                        errors.hireDate ? 'border-red-500' : 'border-gray-300'
+                      }`}
+                    />
+                  )}
+                  
                   {errors.hireDate && (
                     <div className="text-red-500 text-sm mt-1">{errors.hireDate}</div>
                   )}
