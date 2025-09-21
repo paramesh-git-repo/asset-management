@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useAuth } from "../contexts/AuthContext";
 
 export default function Auth({ onAuthSuccess }) {
@@ -9,19 +9,37 @@ export default function Auth({ onAuthSuccess }) {
   const [role, setRole] = useState("Employee");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   
   const { login, register } = useAuth();
+
+  // Clear error when user starts typing
+  const clearError = () => {
+    if (error) {
+      setError("");
+    }
+  };
+
+
 
   async function handleSubmit(e) {
     e.preventDefault();
     setLoading(true);
-    setError("");
+    setError(""); // Clear any previous errors
 
     try {
       let result;
       
       if (isLogin) {
         result = await login(email, password);
+        
+        // Handle login result
+        if (result && result.success) {
+          onAuthSuccess(); // notify parent (App.js) that auth worked
+        } else {
+          const errorMessage = result?.error || "Login failed. Please check your credentials.";
+          setError(errorMessage);
+        }
       } else {
         const nameParts = name.split(' ');
         const userData = { 
@@ -33,12 +51,14 @@ export default function Auth({ onAuthSuccess }) {
           role: role
         };
         result = await register(userData);
-      }
-
-      if (result.success) {
-        onAuthSuccess(); // notify parent (App.js) that auth worked
-      } else {
-        setError(result.error || "Something went wrong");
+        
+        // Handle registration result
+        if (result && result.success) {
+          onAuthSuccess();
+        } else {
+          const errorMessage = result?.error || "Registration failed. Please try again.";
+          setError(errorMessage);
+        }
       }
     } catch (err) {
       setError("Network error. Please check if the backend is running.");
@@ -54,11 +74,25 @@ export default function Auth({ onAuthSuccess }) {
           {isLogin ? "Login" : "Signup"}
         </h2>
 
+
         {error && (
-          <div className="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded-lg">
+          <div
+            className="error-alert"
+            style={{
+              backgroundColor: "#fef2f2",   // soft light red background
+              color: "#b91c1c",            // deep red text
+              padding: "12px 16px",
+              borderRadius: "6px",
+              border: "1px solid #fca5a5", // light red border
+              marginBottom: "16px",
+              fontSize: "14px",
+              fontWeight: "500",
+            }}
+          >
             {error}
           </div>
         )}
+        
 
         <form onSubmit={handleSubmit} className="space-y-4">
           {!isLogin && (
@@ -88,19 +122,34 @@ export default function Auth({ onAuthSuccess }) {
             type="email"
             placeholder="Email"
             value={email}
-            onChange={(e) => setEmail(e.target.value)}
+            onChange={(e) => {
+              setEmail(e.target.value);
+              clearError();
+            }}
             className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:border-blue-500 focus:ring focus:ring-blue-200"
             required
           />
 
-          <input
-            type="password"
-            placeholder="Password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:border-blue-500 focus:ring focus:ring-blue-200"
-            required
-          />
+          <div className="relative">
+            <input
+              type={showPassword ? "text" : "password"}
+              placeholder="Password"
+              value={password}
+              onChange={(e) => {
+                setPassword(e.target.value);
+                clearError();
+              }}
+              className="w-full px-4 py-3 pr-12 rounded-lg border border-gray-300 focus:border-blue-500 focus:ring focus:ring-blue-200"
+              required
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassword(!showPassword)}
+              className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 transition-colors duration-200"
+            >
+              <i className={`fas ${showPassword ? 'fa-eye-slash' : 'fa-eye'}`}></i>
+            </button>
+          </div>
 
           <button
             type="submit"
@@ -118,6 +167,7 @@ export default function Auth({ onAuthSuccess }) {
             onClick={() => {
               setIsLogin(!isLogin);
               setError("");
+              setShowPassword(false);
             }}
             className="text-blue-600 font-medium hover:text-blue-800"
           >

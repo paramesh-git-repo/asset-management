@@ -2,7 +2,7 @@ import React from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 
-const Sidebar = ({ currentPage, onPageChange }) => {
+const Sidebar = ({ currentPage }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const { user, hasPermission } = useAuth();
@@ -46,7 +46,6 @@ const Sidebar = ({ currentPage, onPageChange }) => {
   ];
 
   const handleNavigation = (item) => {
-    onPageChange(item.id);
     navigate(item.path);
   };
 

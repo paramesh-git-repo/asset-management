@@ -168,16 +168,26 @@ const Employees = () => {
 
       if (editingEmployee) {
         // Update existing employee
+        console.log('🔍 Updating employee with ID:', editingEmployee.id);
+        console.log('🔍 Employee data to update:', employeeInfo);
         const updatedEmployee = await dataService.updateEmployee(editingEmployee.id, employeeInfo);
+        console.log('🔍 Updated employee response:', updatedEmployee);
         
         // Update local state
-        setEmployees(prevEmployees =>
-          Array.isArray(prevEmployees) ? prevEmployees.map(employee =>
-            employee.id === editingEmployee.id ? { ...updatedEmployee, id: editingEmployee.id } : employee
-          ) : []
-        );
+        setEmployees(prevEmployees => {
+          const updated = Array.isArray(prevEmployees) ? prevEmployees.map(employee => {
+            if (employee.id === editingEmployee.id) {
+              console.log('🔍 Updating employee in list:', employee.id, 'with data:', updatedEmployee);
+              return { ...updatedEmployee, id: editingEmployee.id };
+            }
+            return employee;
+          }) : [];
+          console.log('🔍 Updated employees list:', updated);
+          return updated;
+        });
         
         console.log('✅ Employee updated successfully:', updatedEmployee);
+        showNotification('Employee updated successfully!', 'success');
       } else {
         // Add new employee
         const savedEmployee = await dataService.createEmployee(employeeInfo);
@@ -191,6 +201,7 @@ const Employees = () => {
         setEmployees(prevEmployees => [employeeWithTimestamp, ...prevEmployees]);
         
         console.log('✅ Employee created successfully:', savedEmployee);
+        showNotification('Employee created successfully!', 'success');
       }
       
       setShowEmployeeModal(false);
@@ -691,7 +702,7 @@ const Employees = () => {
                 filteredEmployees.map(employee => (
                   <tr key={employee.id} className="hover:bg-gradient-to-r hover:from-purple-50 hover:to-pink-50 transition-all duration-300 group">
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <span className="font-semibold text-gray-900">{employee.id}</span>
+                      <span className="font-semibold text-gray-900">{employee.employeeId || employee.id}</span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-gray-900">{employee.fullName || `${employee.firstName} ${employee.lastName}`}</td>
                     <td className="px-6 py-4 whitespace-nowrap">
@@ -715,7 +726,7 @@ const Employees = () => {
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex space-x-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                      <div className="flex space-x-2">
                         <button
                           className="p-2 rounded-lg border border-blue-200 text-blue-600 hover:bg-blue-50 hover:border-blue-300 hover:scale-110 transition-all duration-300 shadow-sm"
                           onClick={() => handleViewEmployee(employee)}

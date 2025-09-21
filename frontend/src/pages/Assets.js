@@ -825,7 +825,7 @@ const Assets = () => {
                       {asset.assignedDate ? formatDate(asset.assignedDate) : 'Not Assigned'}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex space-x-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                      <div className="flex space-x-2">
                         <button
                           className="p-2 rounded-lg border border-blue-200 text-blue-600 hover:bg-blue-50 hover:border-blue-300 hover:scale-110 transition-all duration-300 shadow-sm"
                           onClick={() => handleViewAsset(asset)}

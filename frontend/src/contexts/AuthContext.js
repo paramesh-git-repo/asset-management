@@ -82,7 +82,7 @@ export const AuthProvider = ({ children }) => {
 
       const data = await response.json();
 
-      if (data.status === 'success' && data.data.token) {
+      if (response.ok && data.status === 'success' && data.data.token) {
         const userData = data.data.user;
         console.log('Login successful:', userData);
         
@@ -93,8 +93,17 @@ export const AuthProvider = ({ children }) => {
         setUser(userData);
         return { success: true, user: userData };
       } else {
-        console.log('Login failed:', data.message);
-        return { success: false, error: data.message || 'Login failed' };
+        console.log('Login failed:', data.message, 'Status:', response.status);
+        // Provide more specific error messages based on response status
+        let errorMessage = data.message || 'Login failed';
+        if (response.status === 401) {
+          errorMessage = 'Invalid email or password. Please check your credentials and try again.';
+        } else if (response.status === 403) {
+          errorMessage = 'Account is locked or deactivated. Please contact your administrator.';
+        } else if (response.status >= 500) {
+          errorMessage = 'Server error. Please try again later.';
+        }
+        return { success: false, error: errorMessage };
       }
     } catch (error) {
       console.error('Login error:', error);
@@ -153,6 +162,8 @@ export const AuthProvider = ({ children }) => {
     if (user) {
       const updatedUser = { ...user, ...profileData };
       setUser(updatedUser);
+      // Persist the updated user data to localStorage
+      localStorage.setItem('user', JSON.stringify(updatedUser));
     }
   };
 

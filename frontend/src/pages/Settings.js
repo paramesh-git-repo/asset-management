@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import * as XLSX from 'xlsx';
 import { useAuth } from '../contexts/AuthContext';
+import { authAPI } from '../services/api';
 import AssetPageSettingsModal from '../components/AssetPageSettingsModal';
 import EmployeePageSettingsModal from '../components/EmployeePageSettingsModal';
 import UserManagement from '../components/UserManagement';
@@ -38,6 +39,22 @@ const Settings = () => {
     employeeId: 'EMP001',
     manager: 'Sarah Johnson',
     location: 'New York Office'
+  });
+
+  // Profile validation and password change states
+  const [profileErrors, setProfileErrors] = useState({});
+  const [passwordData, setPasswordData] = useState({
+    currentPassword: '',
+    newPassword: '',
+    confirmPassword: ''
+  });
+  const [passwordErrors, setPasswordErrors] = useState({});
+  const [isChangingPassword, setIsChangingPassword] = useState(false);
+  const [showPasswordSection, setShowPasswordSection] = useState(false);
+  const [showPasswords, setShowPasswords] = useState({
+    currentPassword: false,
+    newPassword: false,
+    confirmPassword: false
   });
 
   
@@ -165,16 +182,120 @@ const Settings = () => {
     document.documentElement.style.setProperty('--base-font-size', sizeMap[size]);
   };
 
+  // Profile validation function
+  const validateProfile = () => {
+    const errors = {};
+    
+    if (!profile.firstName.trim()) {
+      errors.firstName = 'First name is required';
+    }
+    if (!profile.lastName.trim()) {
+      errors.lastName = 'Last name is required';
+    }
+    if (!profile.email.trim()) {
+      errors.email = 'Email is required';
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(profile.email)) {
+      errors.email = 'Please enter a valid email address';
+    }
+    if (profile.phone && !/^\+?[\d\s\-\(\)]{10,}$/.test(profile.phone)) {
+      errors.phone = 'Please enter a valid phone number';
+    }
+    if (!profile.department.trim()) {
+      errors.department = 'Department is required';
+    }
+    if (!profile.position.trim()) {
+      errors.position = 'Position is required';
+    }
+    if (!profile.employeeId.trim()) {
+      errors.employeeId = 'Employee ID is required';
+    }
+    
+    setProfileErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
+  // Password validation function
+  const validatePassword = () => {
+    const errors = {};
+    
+    if (!passwordData.currentPassword) {
+      errors.currentPassword = 'Current password is required';
+    }
+    if (!passwordData.newPassword) {
+      errors.newPassword = 'New password is required';
+    } else if (passwordData.newPassword.length < 8) {
+      errors.newPassword = 'Password must be at least 8 characters long';
+    }
+    if (passwordData.newPassword !== passwordData.confirmPassword) {
+      errors.confirmPassword = 'Passwords do not match';
+    }
+    if (passwordData.currentPassword === passwordData.newPassword) {
+      errors.newPassword = 'New password must be different from current password';
+    }
+    
+    setPasswordErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
   // Profile handlers
   const handleProfileChange = (field, value) => {
     setProfile(prev => ({ ...prev, [field]: value }));
+    // Clear error when user starts typing
+    if (profileErrors[field]) {
+      setProfileErrors(prev => ({ ...prev, [field]: '' }));
+    }
+  };
+
+  // Toggle password visibility
+  const togglePasswordVisibility = (field) => {
+    setShowPasswords(prev => ({
+      ...prev,
+      [field]: !prev[field]
+    }));
+  };
+
+  // Password change handler
+  const handlePasswordChange = async () => {
+    if (!validatePassword()) return;
+    
+    setIsChangingPassword(true);
+    try {
+      // Call the real API
+      await authAPI.changePassword({
+        currentPassword: passwordData.currentPassword,
+        newPassword: passwordData.newPassword
+      });
+      
+      // Clear password fields
+      setPasswordData({
+        currentPassword: '',
+        newPassword: '',
+        confirmPassword: ''
+      });
+      setShowPasswordSection(false);
+      setSaveMessage('Password changed successfully!');
+      setTimeout(() => setSaveMessage(''), 3000);
+    } catch (error) {
+      console.error('Password change error:', error);
+      setSaveMessage(error.message || 'Failed to change password. Please try again.');
+      setTimeout(() => setSaveMessage(''), 3000);
+    } finally {
+      setIsChangingPassword(false);
+    }
+  };
+
+  // Calculate profile completion percentage
+  const getProfileCompletion = () => {
+    const fields = ['firstName', 'lastName', 'email', 'phone', 'department', 'position', 'employeeId', 'address', 'dateOfBirth', 'emergencyContact', 'emergencyPhone', 'hireDate', 'manager', 'location', 'bio'];
+    const completedFields = fields.filter(field => profile[field] && profile[field].toString().trim() !== '');
+    return Math.round((completedFields.length / fields.length) * 100);
   };
 
   const handleProfilePictureUpload = (event) => {
     const file = event.target.files[0];
     if (file) {
-      if (file.size > 2 * 1024 * 1024) { // 2MB limit
-        alert('File size must be less than 2MB');
+      if (file.size > 10 * 1024 * 1024) { // 10MB limit
+        alert('File size must be less than 10MB');
         return;
       }
       
@@ -262,6 +383,14 @@ const Settings = () => {
     setSaveMessage('');
     
     try {
+      // Validate profile if we're on the profile tab
+      if (activeTab === 'profile' && !validateProfile()) {
+        setSaveMessage('Please fix the validation errors before saving.');
+        setTimeout(() => setSaveMessage(''), 3000);
+        setIsSaving(false);
+        return;
+      }
+      
       // Simulate API call
       await new Promise(resolve => setTimeout(resolve, 1500));
       
@@ -272,6 +401,16 @@ const Settings = () => {
         security,
         profile
       }));
+      
+      // Update auth context if profile was updated
+      if (activeTab === 'profile') {
+        updateProfile({
+          firstName: profile.firstName,
+          lastName: profile.lastName,
+          email: profile.email,
+          avatar: profile.avatar
+        });
+      }
       
       setSaveMessage('Settings saved successfully!');
       setTimeout(() => setSaveMessage(''), 3000);
@@ -533,7 +672,24 @@ const Settings = () => {
           {activeTab === 'profile' && (
             <div className="space-y-6">
               <div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">User Profile</h3>
+                <div className="flex justify-between items-center mb-6">
+                  <h3 className="text-lg font-semibold text-gray-900">User Profile</h3>
+                  <div className="flex items-center space-x-4">
+                    {/* Profile Completion Indicator */}
+                    <div className="flex items-center space-x-2">
+                      <span className="text-sm text-gray-600">Profile Completion:</span>
+                      <div className="flex items-center space-x-2">
+                        <div className="w-24 h-2 bg-gray-200 rounded-full overflow-hidden">
+                          <div 
+                            className="h-full bg-gradient-to-r from-blue-500 to-green-500 transition-all duration-500"
+                            style={{ width: `${getProfileCompletion()}%` }}
+                          ></div>
+                        </div>
+                        <span className="text-sm font-medium text-gray-900">{getProfileCompletion()}%</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
                 
                 {/* Profile Picture */}
                 <div className="mb-6">
@@ -541,7 +697,7 @@ const Settings = () => {
                     <i className="fas fa-camera mr-2 text-blue-600"></i>Profile Picture
                   </h4>
                   <div className="flex items-center space-x-4">
-                    <div className="w-20 h-20 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white text-2xl font-bold overflow-hidden">
+                    <div className="w-20 h-20 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white text-2xl font-bold overflow-hidden shadow-lg">
                       {profile.avatar ? (
                         <img 
                           src={profile.avatar} 
@@ -566,7 +722,7 @@ const Settings = () => {
                       >
                         <i className="fas fa-upload mr-2"></i>Upload Photo
                       </label>
-                      <p className="text-sm text-gray-600 mt-1">JPG, PNG or GIF. Max size 2MB.</p>
+                      <p className="text-sm text-gray-600 mt-1">JPG, PNG or GIF. Max size 10MB.</p>
                       {profile.avatar && (
                         <button 
                           onClick={() => {
@@ -589,40 +745,73 @@ const Settings = () => {
                   </h4>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">First Name</label>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">First Name *</label>
                       <input
                         type="text"
-                        className="w-full rounded-xl border border-gray-300 px-4 py-3 transition-all duration-300 text-gray-900 bg-white focus:border-gray-800 focus:ring-4 focus:ring-gray-800/10"
+                        className={`w-full rounded-xl border px-4 py-3 transition-all duration-300 text-gray-900 bg-white focus:ring-4 focus:ring-gray-800/10 ${
+                          profileErrors.firstName ? 'border-red-500 focus:border-red-500' : 'border-gray-300 focus:border-gray-800'
+                        }`}
                         value={profile.firstName}
-                        onChange={(e) => setProfile(prev => ({ ...prev, firstName: e.target.value }))}
+                        onChange={(e) => handleProfileChange('firstName', e.target.value)}
                       />
+                      {profileErrors.firstName && (
+                        <p className="mt-1 text-sm text-red-600 flex items-center">
+                          <i className="fas fa-exclamation-circle mr-1"></i>
+                          {profileErrors.firstName}
+                        </p>
+                      )}
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Last Name</label>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Last Name *</label>
                       <input
                         type="text"
-                        className="w-full rounded-xl border border-gray-300 px-4 py-3 transition-all duration-300 text-gray-900 bg-white focus:border-gray-800 focus:ring-4 focus:ring-gray-800/10"
+                        className={`w-full rounded-xl border px-4 py-3 transition-all duration-300 text-gray-900 bg-white focus:ring-4 focus:ring-gray-800/10 ${
+                          profileErrors.lastName ? 'border-red-500 focus:border-red-500' : 'border-gray-300 focus:border-gray-800'
+                        }`}
                         value={profile.lastName}
-                        onChange={(e) => setProfile(prev => ({ ...prev, lastName: e.target.value }))}
+                        onChange={(e) => handleProfileChange('lastName', e.target.value)}
                       />
+                      {profileErrors.lastName && (
+                        <p className="mt-1 text-sm text-red-600 flex items-center">
+                          <i className="fas fa-exclamation-circle mr-1"></i>
+                          {profileErrors.lastName}
+                        </p>
+                      )}
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Email</label>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Email *</label>
                       <input
                         type="email"
-                        className="w-full rounded-xl border border-gray-300 px-4 py-3 transition-all duration-300 text-gray-900 bg-white focus:border-gray-800 focus:ring-4 focus:ring-gray-800/10"
+                        className={`w-full rounded-xl border px-4 py-3 transition-all duration-300 text-gray-900 bg-white focus:ring-4 focus:ring-gray-800/10 ${
+                          profileErrors.email ? 'border-red-500 focus:border-red-500' : 'border-gray-300 focus:border-gray-800'
+                        }`}
                         value={profile.email}
-                        onChange={(e) => setProfile(prev => ({ ...prev, email: e.target.value }))}
+                        onChange={(e) => handleProfileChange('email', e.target.value)}
                       />
+                      {profileErrors.email && (
+                        <p className="mt-1 text-sm text-red-600 flex items-center">
+                          <i className="fas fa-exclamation-circle mr-1"></i>
+                          {profileErrors.email}
+                        </p>
+                      )}
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">Phone</label>
                       <input
                         type="tel"
-                        className="w-full rounded-xl border border-gray-300 px-4 py-3 transition-all duration-300 text-gray-900 bg-white focus:border-gray-800 focus:ring-4 focus:ring-gray-800/10"
+                        className={`w-full rounded-xl border px-4 py-3 transition-all duration-300 text-gray-900 bg-white focus:ring-4 focus:ring-gray-800/10 ${
+                          profileErrors.phone ? 'border-red-500 focus:border-red-500' : 'border-gray-300 focus:border-gray-800'
+                        }`}
                         value={profile.phone}
-                        onChange={(e) => setProfile(prev => ({ ...prev, phone: e.target.value }))}
+                        onChange={(e) => handleProfileChange('phone', e.target.value)}
+                        placeholder="+1 (555) 123-4567"
                       />
+                      {profileErrors.phone && (
+                        <p className="mt-1 text-sm text-red-600 flex items-center">
+                          <i className="fas fa-exclamation-circle mr-1"></i>
+                          {profileErrors.phone}
+                        </p>
+                      )}
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">Date of Birth</label>
@@ -630,7 +819,7 @@ const Settings = () => {
                         type="date"
                         className="w-full rounded-xl border border-gray-300 px-4 py-3 transition-all duration-300 text-gray-900 bg-white focus:border-gray-800 focus:ring-4 focus:ring-gray-800/10"
                         value={profile.dateOfBirth}
-                        onChange={(e) => setProfile(prev => ({ ...prev, dateOfBirth: e.target.value }))}
+                        onChange={(e) => handleProfileChange('dateOfBirth', e.target.value)}
                       />
                     </div>
                     <div>
@@ -639,7 +828,8 @@ const Settings = () => {
                         type="text"
                         className="w-full rounded-xl border border-gray-300 px-4 py-3 transition-all duration-300 text-gray-900 bg-white focus:border-gray-800 focus:ring-4 focus:ring-gray-800/10"
                         value={profile.address}
-                        onChange={(e) => setProfile(prev => ({ ...prev, address: e.target.value }))}
+                        onChange={(e) => handleProfileChange('address', e.target.value)}
+                        placeholder="123 Main Street, City, State 12345"
                       />
                     </div>
                   </div>
@@ -679,31 +869,58 @@ const Settings = () => {
                   </h4>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Employee ID</label>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Employee ID *</label>
                       <input
                         type="text"
-                        className="w-full rounded-xl border border-gray-300 px-4 py-3 transition-all duration-300 text-gray-900 bg-white focus:border-gray-800 focus:ring-4 focus:ring-gray-800/10"
+                        className={`w-full rounded-xl border px-4 py-3 transition-all duration-300 text-gray-900 bg-white focus:ring-4 focus:ring-gray-800/10 ${
+                          profileErrors.employeeId ? 'border-red-500 focus:border-red-500' : 'border-gray-300 focus:border-gray-800'
+                        }`}
                         value={profile.employeeId}
-                        onChange={(e) => setProfile(prev => ({ ...prev, employeeId: e.target.value }))}
+                        onChange={(e) => handleProfileChange('employeeId', e.target.value)}
+                        placeholder="EMP001"
                       />
+                      {profileErrors.employeeId && (
+                        <p className="mt-1 text-sm text-red-600 flex items-center">
+                          <i className="fas fa-exclamation-circle mr-1"></i>
+                          {profileErrors.employeeId}
+                        </p>
+                      )}
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Department</label>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Department *</label>
                       <input
                         type="text"
-                        className="w-full rounded-xl border border-gray-300 px-4 py-3 transition-all duration-300 text-gray-900 bg-white focus:border-gray-800 focus:ring-4 focus:ring-gray-800/10"
+                        className={`w-full rounded-xl border px-4 py-3 transition-all duration-300 text-gray-900 bg-white focus:ring-4 focus:ring-gray-800/10 ${
+                          profileErrors.department ? 'border-red-500 focus:border-red-500' : 'border-gray-300 focus:border-gray-800'
+                        }`}
                         value={profile.department}
-                        onChange={(e) => setProfile(prev => ({ ...prev, department: e.target.value }))}
+                        onChange={(e) => handleProfileChange('department', e.target.value)}
+                        placeholder="IT"
                       />
+                      {profileErrors.department && (
+                        <p className="mt-1 text-sm text-red-600 flex items-center">
+                          <i className="fas fa-exclamation-circle mr-1"></i>
+                          {profileErrors.department}
+                        </p>
+                      )}
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Position</label>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Position *</label>
                       <input
                         type="text"
-                        className="w-full rounded-xl border border-gray-300 px-4 py-3 transition-all duration-300 text-gray-900 bg-white focus:border-gray-800 focus:ring-4 focus:ring-gray-800/10"
+                        className={`w-full rounded-xl border px-4 py-3 transition-all duration-300 text-gray-900 bg-white focus:ring-4 focus:ring-gray-800/10 ${
+                          profileErrors.position ? 'border-red-500 focus:border-red-500' : 'border-gray-300 focus:border-gray-800'
+                        }`}
                         value={profile.position}
-                        onChange={(e) => setProfile(prev => ({ ...prev, position: e.target.value }))}
+                        onChange={(e) => handleProfileChange('position', e.target.value)}
+                        placeholder="System Administrator"
                       />
+                      {profileErrors.position && (
+                        <p className="mt-1 text-sm text-red-600 flex items-center">
+                          <i className="fas fa-exclamation-circle mr-1"></i>
+                          {profileErrors.position}
+                        </p>
+                      )}
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">Manager</label>
@@ -711,7 +928,8 @@ const Settings = () => {
                         type="text"
                         className="w-full rounded-xl border border-gray-300 px-4 py-3 transition-all duration-300 text-gray-900 bg-white focus:border-gray-800 focus:ring-4 focus:ring-gray-800/10"
                         value={profile.manager}
-                        onChange={(e) => setProfile(prev => ({ ...prev, manager: e.target.value }))}
+                        onChange={(e) => handleProfileChange('manager', e.target.value)}
+                        placeholder="Sarah Johnson"
                       />
                     </div>
                     <div>
@@ -720,7 +938,7 @@ const Settings = () => {
                         type="date"
                         className="w-full rounded-xl border border-gray-300 px-4 py-3 transition-all duration-300 text-gray-900 bg-white focus:border-gray-800 focus:ring-4 focus:ring-gray-800/10"
                         value={profile.hireDate}
-                        onChange={(e) => setProfile(prev => ({ ...prev, hireDate: e.target.value }))}
+                        onChange={(e) => handleProfileChange('hireDate', e.target.value)}
                       />
                     </div>
                     <div>
@@ -729,7 +947,8 @@ const Settings = () => {
                         type="text"
                         className="w-full rounded-xl border border-gray-300 px-4 py-3 transition-all duration-300 text-gray-900 bg-white focus:border-gray-800 focus:ring-4 focus:ring-gray-800/10"
                         value={profile.location}
-                        onChange={(e) => setProfile(prev => ({ ...prev, location: e.target.value }))}
+                        onChange={(e) => handleProfileChange('location', e.target.value)}
+                        placeholder="New York Office"
                       />
                     </div>
                   </div>
@@ -737,6 +956,153 @@ const Settings = () => {
 
 
 
+
+                {/* Password Change Section */}
+                <div className="mb-6">
+                  <h4 className="text-md font-medium text-gray-800 mb-3 flex items-center">
+                    <i className="fas fa-lock mr-2 text-red-600"></i>Password & Security
+                  </h4>
+                  <div className="bg-gray-50 rounded-xl p-4">
+                    <div className="flex items-center justify-between mb-4">
+                      <div>
+                        <h5 className="font-medium text-gray-900">Change Password</h5>
+                        <p className="text-sm text-gray-600">Update your account password for better security</p>
+                      </div>
+                      <button
+                        onClick={() => setShowPasswordSection(!showPasswordSection)}
+                        className="px-4 py-2 bg-gray-800 text-white rounded-lg hover:bg-gray-700 transition-colors duration-200"
+                      >
+                        <i className={`fas ${showPasswordSection ? 'fa-chevron-up' : 'fa-chevron-down'} mr-2`}></i>
+                        {showPasswordSection ? 'Hide' : 'Change Password'}
+                      </button>
+                    </div>
+                    
+                    {showPasswordSection && (
+                      <div className="space-y-4">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">Current Password *</label>
+                          <div className="relative">
+                            <input
+                              type={showPasswords.currentPassword ? "text" : "password"}
+                              className={`w-full rounded-xl border px-4 py-3 pr-12 transition-all duration-300 text-gray-900 bg-white focus:ring-4 focus:ring-gray-800/10 ${
+                                passwordErrors.currentPassword ? 'border-red-500 focus:border-red-500' : 'border-gray-300 focus:border-gray-800'
+                              }`}
+                              value={passwordData.currentPassword}
+                              onChange={(e) => {
+                                setPasswordData(prev => ({ ...prev, currentPassword: e.target.value }));
+                                if (passwordErrors.currentPassword) {
+                                  setPasswordErrors(prev => ({ ...prev, currentPassword: '' }));
+                                }
+                              }}
+                              placeholder="Enter your current password"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => togglePasswordVisibility('currentPassword')}
+                              className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 transition-colors duration-200"
+                            >
+                              <i className={`fas ${showPasswords.currentPassword ? 'fa-eye-slash' : 'fa-eye'}`}></i>
+                            </button>
+                          </div>
+                          {passwordErrors.currentPassword && (
+                            <p className="mt-1 text-sm text-red-600 flex items-center">
+                              <i className="fas fa-exclamation-circle mr-1"></i>
+                              {passwordErrors.currentPassword}
+                            </p>
+                          )}
+                        </div>
+                        
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">New Password *</label>
+                          <div className="relative">
+                            <input
+                              type={showPasswords.newPassword ? "text" : "password"}
+                              className={`w-full rounded-xl border px-4 py-3 pr-12 transition-all duration-300 text-gray-900 bg-white focus:ring-4 focus:ring-gray-800/10 ${
+                                passwordErrors.newPassword ? 'border-red-500 focus:border-red-500' : 'border-gray-300 focus:border-gray-800'
+                              }`}
+                              value={passwordData.newPassword}
+                              onChange={(e) => {
+                                setPasswordData(prev => ({ ...prev, newPassword: e.target.value }));
+                                if (passwordErrors.newPassword) {
+                                  setPasswordErrors(prev => ({ ...prev, newPassword: '' }));
+                                }
+                              }}
+                              placeholder="Enter your new password (min 8 characters)"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => togglePasswordVisibility('newPassword')}
+                              className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 transition-colors duration-200"
+                            >
+                              <i className={`fas ${showPasswords.newPassword ? 'fa-eye-slash' : 'fa-eye'}`}></i>
+                            </button>
+                          </div>
+                          {passwordErrors.newPassword && (
+                            <p className="mt-1 text-sm text-red-600 flex items-center">
+                              <i className="fas fa-exclamation-circle mr-1"></i>
+                              {passwordErrors.newPassword}
+                            </p>
+                          )}
+                        </div>
+                        
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">Confirm New Password *</label>
+                          <div className="relative">
+                            <input
+                              type={showPasswords.confirmPassword ? "text" : "password"}
+                              className={`w-full rounded-xl border px-4 py-3 pr-12 transition-all duration-300 text-gray-900 bg-white focus:ring-4 focus:ring-gray-800/10 ${
+                                passwordErrors.confirmPassword ? 'border-red-500 focus:border-red-500' : 'border-gray-300 focus:border-gray-800'
+                              }`}
+                              value={passwordData.confirmPassword}
+                              onChange={(e) => {
+                                setPasswordData(prev => ({ ...prev, confirmPassword: e.target.value }));
+                                if (passwordErrors.confirmPassword) {
+                                  setPasswordErrors(prev => ({ ...prev, confirmPassword: '' }));
+                                }
+                              }}
+                              placeholder="Confirm your new password"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => togglePasswordVisibility('confirmPassword')}
+                              className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 transition-colors duration-200"
+                            >
+                              <i className={`fas ${showPasswords.confirmPassword ? 'fa-eye-slash' : 'fa-eye'}`}></i>
+                            </button>
+                          </div>
+                          {passwordErrors.confirmPassword && (
+                            <p className="mt-1 text-sm text-red-600 flex items-center">
+                              <i className="fas fa-exclamation-circle mr-1"></i>
+                              {passwordErrors.confirmPassword}
+                            </p>
+                          )}
+                        </div>
+                        
+                        <div className="flex space-x-3">
+                          <button
+                            onClick={handlePasswordChange}
+                            disabled={isChangingPassword}
+                            className="px-6 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                          >
+                            <i className={`fas ${isChangingPassword ? 'fa-spinner fa-spin' : 'fa-key'} mr-2`}></i>
+                            {isChangingPassword ? 'Changing...' : 'Change Password'}
+                          </button>
+                          <button
+                            onClick={() => {
+                              setShowPasswordSection(false);
+                              setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' });
+                              setPasswordErrors({});
+                              setShowPasswords({ currentPassword: false, newPassword: false, confirmPassword: false });
+                            }}
+                            className="px-6 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition-colors duration-200"
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
 
                 {/* Bio */}
                 <div>
@@ -748,7 +1114,7 @@ const Settings = () => {
                     className="w-full rounded-xl border border-gray-300 px-4 py-3 transition-all duration-300 text-gray-900 bg-white focus:border-gray-800 focus:ring-4 focus:ring-gray-800/10 resize-none"
                     placeholder="Tell us about yourself..."
                     value={profile.bio}
-                    onChange={(e) => setProfile(prev => ({ ...prev, bio: e.target.value }))}
+                    onChange={(e) => handleProfileChange('bio', e.target.value)}
                   />
                 </div>
               </div>
@@ -794,6 +1160,14 @@ const Settings = () => {
       <EmployeePageSettingsModal
         show={showEmployeePageSettings}
         onHide={() => setShowEmployeePageSettings(false)}
+      />
+
+      {/* Notification */}
+      <Notification
+        show={saveMessage !== ''}
+        onHide={() => setSaveMessage('')}
+        message={saveMessage}
+        type={saveMessage.includes('successfully') ? 'success' : 'error'}
       />
     </div>
   );

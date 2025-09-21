@@ -179,7 +179,7 @@ export const authAPI = {
 
   // Change password
   changePassword: (passwordData) => apiCall(`${config.API_BASE_URL}/auth/change-password`, {
-    method: 'POST',
+    method: 'PUT',
     body: JSON.stringify(passwordData),
   }),
 

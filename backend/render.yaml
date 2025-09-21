@@ -20,7 +20,7 @@ services:
       - key: JWT_EXPIRE
         value: 24h
       - key: MAX_FILE_SIZE
-        value: 5242880
+        value: 10485760
       - key: UPLOAD_PATH
         value: ./uploads
       - key: CORS_ORIGIN

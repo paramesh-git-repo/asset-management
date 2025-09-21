@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import Sidebar from './components/Sidebar';
 import Header from './components/Header';
@@ -13,8 +13,28 @@ import Settings from './pages/Settings';
 
 // Main App Content Component
 function AppContent() {
-  const [currentPage, setCurrentPage] = useState('dashboard');
   const { user, loading, handleAuthSuccess } = useAuth();
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  // Ensure we start on dashboard when user logs in
+  useEffect(() => {
+    if (user && location.pathname === '/') {
+      navigate('/dashboard');
+    }
+  }, [user, navigate, location.pathname]);
+
+  // Get current page from the URL path
+  const getCurrentPage = () => {
+    const pathToPageMap = {
+      '/dashboard': 'dashboard',
+      '/assets': 'assets',
+      '/employees': 'employees',
+      '/timeline': 'timeline',
+      '/settings': 'settings'
+    };
+    return pathToPageMap[location.pathname] || 'dashboard';
+  };
 
   // Load theme from localStorage
   useEffect(() => {
@@ -58,37 +78,37 @@ function AppContent() {
 
   // Show main app if authenticated
   return (
-    <Router>
-      <div className="app-layout">
-        <Sidebar 
-          currentPage={currentPage}
-          onPageChange={setCurrentPage}
+    <div className="app-layout">
+      <Sidebar 
+        currentPage={getCurrentPage()}
+        onPageChange={() => {}} // No longer needed since Sidebar handles navigation directly
+      />
+      <div className="main-content">
+        <Header 
+          currentPage={getCurrentPage()}
         />
-        <div className="main-content">
-          <Header 
-            currentPage={currentPage}
-          />
-          <div className="content-wrapper">
-            <Routes>
-              <Route path="/" element={<Navigate to="/dashboard" replace />} />
-              <Route path="/dashboard" element={<Dashboard />} />
-              <Route path="/assets" element={<Assets />} />
-              <Route path="/employees" element={<Employees />} />
-              <Route path="/timeline" element={<Timeline />} />
-              <Route path="/settings" element={<Settings />} />
-            </Routes>
-          </div>
+        <div className="content-wrapper">
+          <Routes>
+            <Route path="/" element={<Navigate to="/dashboard" replace />} />
+            <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/assets" element={<Assets />} />
+            <Route path="/employees" element={<Employees />} />
+            <Route path="/timeline" element={<Timeline />} />
+            <Route path="/settings" element={<Settings />} />
+          </Routes>
         </div>
       </div>
-    </Router>
+    </div>
   );
 }
 
 function App() {
   return (
-    <AuthProvider>
-      <AppContent />
-    </AuthProvider>
+    <Router>
+      <AuthProvider>
+        <AppContent />
+      </AuthProvider>
+    </Router>
   );
 }
 

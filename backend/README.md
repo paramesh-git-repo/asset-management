@@ -210,7 +210,7 @@ The system provides real-time alerts for:
 | `NODE_ENV` | Environment mode | `development` |
 | `JWT_SECRET` | JWT secret key | `your_jwt_secret_key_here` |
 | `JWT_EXPIRE` | JWT expiration time | `24h` |
-| `MAX_FILE_SIZE` | Maximum file upload size | `5242880` (5MB) |
+| `MAX_FILE_SIZE` | Maximum file upload size | `10485760` (10MB) |
 | `UPLOAD_PATH` | File upload directory | `./uploads` |
 | `CORS_ORIGIN` | Allowed CORS origin | `http://localhost:3000` |
 
