@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import config from '../config/config';
 
 const AuthContext = createContext();
 
@@ -68,7 +69,7 @@ export const AuthProvider = ({ children }) => {
     console.log('Login attempt:', { email, password });
     setLoading(true);
     try {
-      const response = await fetch('http://localhost:5002/api/auth/login', {
+      const response = await fetch(`${config.API_BASE_URL}/auth/login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -107,7 +108,7 @@ export const AuthProvider = ({ children }) => {
     console.log('Registration attempt:', userData);
     setLoading(true);
     try {
-      const response = await fetch('http://localhost:5002/api/auth/register', {
+      const response = await fetch(`${config.API_BASE_URL}/auth/register`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

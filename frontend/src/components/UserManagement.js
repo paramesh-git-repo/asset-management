@@ -3,6 +3,7 @@ import { useAuth } from '../contexts/AuthContext';
 import RoleBasedRoute from './RoleBasedRoute';
 import ConfirmationModal from './ConfirmationModal';
 import Notification from './Notification';
+import config from '../config/config';
 
 const UserManagement = () => {
   const { user, getAuthHeaders } = useAuth();
@@ -37,7 +38,7 @@ const UserManagement = () => {
   const loadUsers = async () => {
     try {
       setLoading(true);
-      const response = await fetch('http://localhost:5002/api/auth/users', {
+      const response = await fetch(`${config.API_BASE_URL}/auth/users`, {
         headers: getAuthHeaders()
       });
 
@@ -61,7 +62,7 @@ const UserManagement = () => {
   const handleCreateUser = async (e) => {
     e.preventDefault();
     try {
-      const response = await fetch('http://localhost:5002/api/auth/register', {
+      const response = await fetch(`${config.API_BASE_URL}/auth/register`, {
         method: 'POST',
         headers: getAuthHeaders(),
         body: JSON.stringify(newUser)
@@ -94,7 +95,7 @@ const UserManagement = () => {
 
   const handleRoleChange = async (userId, newRole) => {
     try {
-      const response = await fetch(`http://localhost:5002/api/auth/users/${userId}/role`, {
+      const response = await fetch(`${config.API_BASE_URL}/auth/users/${userId}/role`, {
         method: 'PUT',
         headers: getAuthHeaders(),
         body: JSON.stringify({ role: newRole })
@@ -124,7 +125,7 @@ const UserManagement = () => {
     if (!userToDeactivate) return;
     
     try {
-      const response = await fetch(`http://localhost:5002/api/auth/users/${userToDeactivate}/deactivate`, {
+      const response = await fetch(`${config.API_BASE_URL}/auth/users/${userToDeactivate}/deactivate`, {
         method: 'PUT',
         headers: getAuthHeaders()
       });
