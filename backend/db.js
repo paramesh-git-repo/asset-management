@@ -8,17 +8,20 @@ console.log('🔍 Attempting to connect to MongoDB...');
 console.log('🔍 Connection URI:', mongoURI);
 console.log('🔍 Is local MongoDB?', mongoURI.includes('localhost'));
 
-mongoose.connect(mongoURI, {
+// MongoDB connection options
+const mongoOptions = {
     useNewUrlParser: true,
     useUnifiedTopology: true,
-    serverSelectionTimeoutMS: 10000,
+    serverSelectionTimeoutMS: 5000, // Timeout after 5s instead of 30s
     socketTimeoutMS: 45000,
     maxPoolSize: 10,
     minPoolSize: 1,
     maxIdleTimeMS: 30000,
     retryWrites: true,
     w: 'majority'
-})
+};
+
+mongoose.connect(mongoURI, mongoOptions)
 .then(() => {
     console.log("✅ MongoDB Atlas connected successfully!");
     console.log("🔍 Database:", mongoose.connection.db.databaseName);
@@ -27,6 +30,7 @@ mongoose.connect(mongoURI, {
     console.log("🔍 Connection state:", mongoose.connection.readyState);
 })
 .catch(err => {
+    console.error('❌ Initial connection failed:', err.message);
     console.error("❌ MongoDB Atlas connection error:", err);
     console.error("❌ Error details:", err.message);
     console.error("❌ Error code:", err.code);
@@ -53,23 +57,17 @@ mongoose.connection.on('error', (err) => {
   // Try to reconnect after 5 seconds
   setTimeout(() => {
     console.log('🔄 Attempting to reconnect...');
-    mongoose.connect(mongoURI, {
-      useNewUrlParser: true,
-      useUnifiedTopology: true,
-      serverSelectionTimeoutMS: 10000,
-      socketTimeoutMS: 45000,
-      maxPoolSize: 10,
-      minPoolSize: 1,
-      maxIdleTimeMS: 30000,
-      retryWrites: true,
-      w: 'majority'
-    });
+    mongoose.connect(mongoURI, mongoOptions);
   }, 5000);
 });
 
 mongoose.connection.on('disconnected', () => {
-  console.log('⚠️ MongoDB disconnected');
+  console.log('⚠️ MongoDB disconnected — attempting reconnect...');
   console.log('🔍 Current connection state:', mongoose.connection.readyState);
+  setTimeout(() => {
+    console.log('🔄 Attempting to reconnect after disconnect...');
+    mongoose.connect(mongoURI, mongoOptions);
+  }, 5000);
 });
 
 mongoose.connection.on('reconnected', () => {
