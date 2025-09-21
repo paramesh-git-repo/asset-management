@@ -1,0 +1,53 @@
+[build]
+  # Build command - run from frontend directory
+  command = "npm run build"
+  
+  # Directory to publish
+  publish = "build"
+  
+  # Base directory for the build
+  base = "frontend"
+
+[build.environment]
+  # Node.js version
+  NODE_VERSION = "18"
+  
+  # Build environment
+  NODE_ENV = "production"
+  
+  # API URL - Update with your Render backend URL
+  REACT_APP_API_URL = "https://your-render-app.onrender.com/api"
+  
+  # Feature flags
+  REACT_APP_ENABLE_LOGGING = "false"
+  REACT_APP_ENABLE_ANALYTICS = "true"
+  
+  # Build optimization
+  GENERATE_SOURCEMAP = "false"
+
+# Redirect rules for React Router
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+
+# Headers for security
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Frame-Options = "DENY"
+    X-XSS-Protection = "1; mode=block"
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+
+# Cache static assets
+[[headers]]
+  for = "/static/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+# Cache service worker
+[[headers]]
+  for = "/sw.js"
+  [headers.values]
+    Cache-Control = "public, max-age=0, must-revalidate"

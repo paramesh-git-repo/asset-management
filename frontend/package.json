@@ -5,7 +5,11 @@
   "description": "Modern Asset Management System built with React and Tailwind CSS",
   "dependencies": {
     "@fortawesome/fontawesome-free": "^7.0.0",
+    "body-parser": "^2.2.0",
     "chart.js": "^4.5.0",
+    "concurrently": "^9.2.1",
+    "cors": "^2.8.5",
+    "express": "^5.1.0",
     "react": "^19.1.1",
     "react-chartjs-2": "^5.3.0",
     "react-dom": "^19.1.1",

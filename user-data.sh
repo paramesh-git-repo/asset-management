@@ -49,6 +49,9 @@ UPLOAD_PATH=./uploads
 # CORS - Update with your domain
 CORS_ORIGIN=http://$(curl -s http://169.254.169.254/latest/meta-data/public-ipv4)
 
+# Frontend API URL
+REACT_APP_API_URL=http://$(curl -s http://169.254.169.254/latest/meta-data/public-ipv4):5002/api
+
 # Security
 BCRYPT_ROUNDS=12
 EOF
@@ -85,6 +88,8 @@ services:
     image: \${AWS_ACCOUNT_ID}.dkr.ecr.\${AWS_REGION}.amazonaws.com/asset-management-frontend:latest
     ports:
       - "80:80"
+    environment:
+      - REACT_APP_API_URL=\${REACT_APP_API_URL}
     depends_on:
       - backend
     restart: unless-stopped
@@ -106,6 +111,7 @@ AWS_REGION=$(curl -s http://169.254.169.254/latest/meta-data/placement/region)
 # Update docker-compose with actual values
 sed -i "s/\${AWS_ACCOUNT_ID}/$AWS_ACCOUNT_ID/g" docker-compose.yml
 sed -i "s/\${AWS_REGION}/$AWS_REGION/g" docker-compose.yml
+sed -i "s|\${REACT_APP_API_URL}|$REACT_APP_API_URL|g" docker-compose.yml
 
 # Login to ECR
 aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com

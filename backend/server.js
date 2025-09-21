@@ -25,7 +25,12 @@ app.use(compression());
 
 // CORS configuration
 app.use(cors({
-  origin: process.env.CORS_ORIGIN || ['http://localhost:3000', 'https://your-frontend-domain.com'],
+  origin: process.env.CORS_ORIGIN || [
+    'http://localhost:3000', 
+    'https://your-frontend-domain.com',
+    'http://asset-management-react-paramesh.s3-website-us-east-1.amazonaws.com',
+    'https://asset-management-react-paramesh.s3-website-us-east-1.amazonaws.com'
+  ],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']
@@ -42,6 +47,22 @@ if (process.env.NODE_ENV === 'development') {
 
 // Static files
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+
+// API root endpoint
+app.get('/api', (req, res) => {
+  res.json({ 
+    message: "API root is working 🚀",
+    version: "1.0.0",
+    timestamp: new Date().toISOString(),
+    endpoints: {
+      auth: "/api/auth",
+      assets: "/api/assets", 
+      employees: "/api/employees",
+      dashboard: "/api/dashboard",
+      health: "/api/health"
+    }
+  });
+});
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {

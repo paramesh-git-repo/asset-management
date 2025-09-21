@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "description": "Complete Asset Management System with React Frontend and Node.js Backend",
   "scripts": {
-    "start": "concurrently \"npm run start:backend\" \"npm run start:frontend\"",
+    "start": "cd backend && npm start",
     "start:backend": "cd backend && npm start",
     "start:frontend": "cd frontend && npm start",
     "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
@@ -27,9 +27,10 @@
   ],
   "author": "",
   "license": "MIT",
-  "devDependencies": {
+  "dependencies": {
     "concurrently": "^8.2.2"
   },
+  "devDependencies": {},
   "engines": {
     "node": ">=14.0.0",
     "npm": ">=6.0.0"

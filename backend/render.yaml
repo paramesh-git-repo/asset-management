@@ -1,0 +1,35 @@
+# Render deployment configuration
+services:
+  - type: web
+    name: asset-management-backend
+    env: node
+    plan: free
+    rootDir: backend
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+      - key: MONGODB_URI
+        fromDatabase:
+          name: asset-management-db
+          property: connectionString
+      - key: JWT_SECRET
+        generateValue: true
+      - key: JWT_EXPIRE
+        value: 24h
+      - key: MAX_FILE_SIZE
+        value: 5242880
+      - key: UPLOAD_PATH
+        value: ./uploads
+      - key: CORS_ORIGIN
+        value: https://your-netlify-app.netlify.app
+      - key: BCRYPT_ROUNDS
+        value: 12
+
+databases:
+  - name: asset-management-db
+    plan: free
+    databaseName: asset_management
