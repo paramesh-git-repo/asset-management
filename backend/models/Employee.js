@@ -3,10 +3,17 @@ const mongoose = require('mongoose');
 const employeeSchema = new mongoose.Schema({
   employeeId: {
     type: String,
-    required: false, // Will be auto-generated if not provided
+    required: [true, 'Employee ID is required'],
     unique: true,
     trim: true,
-    uppercase: true
+    uppercase: true,
+    validate: {
+      validator: function(v) {
+        // Allow alphanumeric characters, hyphens, and underscores
+        return /^[A-Z0-9_-]+$/.test(v);
+      },
+      message: 'Employee ID can only contain uppercase letters, numbers, hyphens, and underscores'
+    }
   },
   firstName: {
     type: String,
@@ -153,11 +160,10 @@ employeeSchema.virtual('employmentDuration').get(function() {
   return Math.floor((Date.now() - this.hireDate) / (1000 * 60 * 60 * 24 * 365.25));
 });
 
-// Pre-save middleware to generate employee ID if not provided
-employeeSchema.pre('save', async function(next) {
-  if (!this.employeeId) {
-    const count = await this.constructor.countDocuments();
-    this.employeeId = `EMP${String(count + 1).padStart(4, '0')}`;
+// Pre-save middleware to ensure employee ID is uppercase
+employeeSchema.pre('save', function(next) {
+  if (this.employeeId) {
+    this.employeeId = this.employeeId.toUpperCase();
   }
   next();
 });
