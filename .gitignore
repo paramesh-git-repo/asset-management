@@ -13,6 +13,8 @@ frontend/dist/
 .env.test.local
 .env.production.local
 backend/config.env
+# Allow frontend .env (contains public API URL)
+!frontend/.env
 
 # AWS and deployment sensitive files
 *.pem
