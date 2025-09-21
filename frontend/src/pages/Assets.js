@@ -41,8 +41,6 @@ const Assets = () => {
         setError(null);
         const assetsData = await dataService.getAssets();
         setAssets(assetsData);
-        console.log('✅ Assets loaded from API:', assetsData);
-        console.log('🔍 Number of assets loaded:', assetsData.length);
       } catch (err) {
         console.error('❌ Error loading assets:', err);
         setError('Failed to load assets. Please try again.');
@@ -71,7 +69,6 @@ const Assets = () => {
       try {
         const employeesData = await dataService.getEmployees();
         setEmployees(employeesData);
-        console.log('✅ Employees loaded from API:', employeesData);
       } catch (err) {
         console.error('❌ Error loading employees:', err);
         // Fallback to localStorage if API fails

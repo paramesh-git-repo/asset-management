@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, memo } from 'react';
 
-const Notification = ({ 
+const Notification = memo(({ 
   show, 
   onHide, 
   message, 
@@ -87,6 +87,8 @@ const Notification = ({
       </div>
     </div>
   );
-};
+});
+
+Notification.displayName = 'Notification';
 
 export default Notification;

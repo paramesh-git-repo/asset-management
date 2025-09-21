@@ -3,12 +3,8 @@ import config from '../config/config';
 // Helper function for API calls
 async function apiCall(url, options = {}) {
   try {
-    console.log(`🔍 Making API call to: ${url}`);
-    
     // Get authentication token
     const token = localStorage.getItem('token');
-    console.log('🔍 API Call - Token:', token ? 'Present' : 'Missing');
-    console.log('🔍 API Call - Token value:', token ? token.substring(0, 20) + '...' : 'None');
     
     // Set default headers
     const defaultHeaders = {
@@ -24,21 +20,17 @@ async function apiCall(url, options = {}) {
     
     const response = await fetch(url, fetchOptions);
     
-    console.log(`🔍 Response status: ${response.status} ${response.statusText}`);
-    
     if (!response.ok) {
       let errorData;
       try {
         errorData = await response.json();
       } catch {
         const errorText = await response.text();
-        console.error(`❌ API call failed: ${response.status} ${response.statusText}`, errorText);
         throw new Error(`API call failed: ${response.status} ${response.statusText}`);
       }
       
       // Handle token expiration
       if (response.status === 401 && (errorData.message === 'Token expired' || errorData.message === 'Access token required')) {
-        console.log('🔑 Token expired, clearing localStorage and redirecting to login');
         localStorage.removeItem('user');
         localStorage.removeItem('token');
         window.location.reload(); // This will trigger the AuthContext to show login

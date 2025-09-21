@@ -126,9 +126,11 @@ Authorization: Bearer <your_jwt_token>
 ```
 
 ### Default Admin User
-- **Username**: admin
-- **Password**: password
+- **Username**: admin@assetmanagement.com
+- **Password**: admin123
 - **Role**: admin
+
+**Note**: Change the default password in production for security.
 
 ## 📁 File Uploads
 

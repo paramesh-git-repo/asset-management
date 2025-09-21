@@ -24,11 +24,8 @@ const validateRegister = [
 // Login endpoint
 router.post('/login', validateLogin, async (req, res) => {
   try {
-    console.log("🔍 Login attempt:", req.body);
-    
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
-      console.log("❌ Validation errors:", errors.array());
       return res.status(400).json({
         status: 'error',
         message: 'Validation failed',
@@ -40,7 +37,6 @@ router.post('/login', validateLogin, async (req, res) => {
 
     // Find user by email
     const user = await User.findOne({ email: email });
-    console.log("🔍 Found user:", user ? `${user.email} (${user.role})` : 'No user found');
 
     if (!user) {
       return res.status(401).json({

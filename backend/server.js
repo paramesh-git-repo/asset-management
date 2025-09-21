@@ -203,6 +203,30 @@ app.use('*', (req, res) => {
   });
 });
 
+// Error handling middleware (must be after all routes)
+app.use((err, req, res, next) => {
+  console.error('Error:', err.message);
+  console.error('Stack:', err.stack);
+  
+  // Don't leak error details in production
+  const isDevelopment = process.env.NODE_ENV === 'development';
+  
+  res.status(err.status || 500).json({ 
+    status: 'error', 
+    message: err.message || 'Something went wrong!',
+    ...(isDevelopment && { stack: err.stack })
+  });
+});
+
+// 404 handler
+app.use('*', (req, res) => {
+  res.status(404).json({
+    status: 'error',
+    message: 'Route not found',
+    path: req.originalUrl
+  });
+});
+
 // Start server
 app.listen(PORT, "0.0.0.0", () => {
   console.log(`🚀 Server running on port ${PORT}`);

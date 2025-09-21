@@ -66,8 +66,6 @@ const Dashboard = () => {
         
         setAssets(assetsData);
         setEmployees(employeesData);
-        
-        console.log('✅ Dashboard data loaded from API:', { assets: assetsData, employees: employeesData });
 
         // Calculate dashboard data
         const totalAssets = assetsData.length;
