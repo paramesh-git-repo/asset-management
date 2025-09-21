@@ -12,9 +12,7 @@ services:
       - key: PORT
         value: 10000
       - key: MONGODB_URI
-        fromDatabase:
-          name: asset-management-db
-          property: connectionString
+        value: mongodb+srv://parameshk:tjQR02Mq6Lpdi8O3@cluster1.amnjtnt.mongodb.net/asset_management?retryWrites=true&w=majority&appName=Cluster1
       - key: JWT_SECRET
         generateValue: true
       - key: JWT_EXPIRE
@@ -27,8 +25,3 @@ services:
         value: https://your-netlify-app.netlify.app
       - key: BCRYPT_ROUNDS
         value: 12
-
-databases:
-  - name: asset-management-db
-    plan: free
-    databaseName: asset_management
