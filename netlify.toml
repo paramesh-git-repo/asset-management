@@ -6,7 +6,7 @@ base = "."
 [build.environment]
 NODE_VERSION = "20"
 NODE_ENV = "production"
-REACT_APP_API_URL = "https://your-render-app.onrender.com/api"
+REACT_APP_API_URL = "https://asset-management-backend.onrender.com/api"
 REACT_APP_ENABLE_LOGGING = "false"
 REACT_APP_ENABLE_ANALYTICS = "true"
 GENERATE_SOURCEMAP = "false"
