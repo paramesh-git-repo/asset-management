@@ -3,7 +3,7 @@ export const config = {
   // API Base URL - change this based on your environment
   API_BASE_URL: process.env.REACT_APP_API_URL || 
     (process.env.NODE_ENV === 'production' 
-      ? 'https://your-backend-domain.com/api' 
+      ? 'https://asset-management-vdqh.onrender.com/api' 
       : 'http://localhost:5002/api'),
   
   // Environment
