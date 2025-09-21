@@ -1,13 +1,6 @@
 const mongoose = require('mongoose');
 require('dotenv').config({ path: './config.env' });
 
-// MongoDB Atlas connection string from environment variable
-const mongoURI = process.env.MONGODB_URI;
-
-console.log('🔍 Attempting to connect to MongoDB...');
-console.log('🔍 Connection URI:', mongoURI);
-console.log('🔍 Is local MongoDB?', mongoURI.includes('localhost'));
-
 // MongoDB connection options
 const mongoOptions = {
     useNewUrlParser: true,
@@ -21,21 +14,24 @@ const mongoOptions = {
     w: 'majority'
 };
 
-mongoose.connect(mongoURI, mongoOptions)
-.then(() => {
-    console.log("✅ MongoDB Atlas connected successfully!");
+const connectDB = async () => {
+  try {
+    console.log("🔍 Connection URI:", process.env.MONGODB_URI); // add this for debugging
+    console.log('🔍 Attempting to connect to MongoDB...');
+    console.log('🔍 Is local MongoDB?', process.env.MONGODB_URI?.includes('localhost'));
+    
+    await mongoose.connect(process.env.MONGODB_URI, mongoOptions);
+    console.log("✅ MongoDB connected successfully!");
     console.log("🔍 Database:", mongoose.connection.db.databaseName);
     console.log("🔍 Host:", mongoose.connection.host);
     console.log("🔍 Port:", mongoose.connection.port);
     console.log("🔍 Connection state:", mongoose.connection.readyState);
-})
-.catch(err => {
-    console.error('❌ Initial connection failed:', err.message);
-    console.error("❌ MongoDB Atlas connection error:", err);
-    console.error("❌ Error details:", err.message);
-    console.error("❌ Error code:", err.code);
-    console.error("❌ Error name:", err.name);
-});
+  } catch (err) {
+    console.error("❌ MongoDB connection error:", err.message);
+    console.error("❌ Error details:", err);
+    process.exit(1);
+  }
+};
 
 // Connection event listeners
 mongoose.connection.on('connected', () => {
@@ -57,7 +53,7 @@ mongoose.connection.on('error', (err) => {
   // Try to reconnect after 5 seconds
   setTimeout(() => {
     console.log('🔄 Attempting to reconnect...');
-    mongoose.connect(mongoURI, mongoOptions);
+    connectDB();
   }, 5000);
 });
 
@@ -66,7 +62,7 @@ mongoose.connection.on('disconnected', () => {
   console.log('🔍 Current connection state:', mongoose.connection.readyState);
   setTimeout(() => {
     console.log('🔄 Attempting to reconnect after disconnect...');
-    mongoose.connect(mongoURI, mongoOptions);
+    connectDB();
   }, 5000);
 });
 
@@ -87,4 +83,7 @@ process.on('SIGINT', async () => {
     }
 });
 
-module.exports = mongoose;
+// Call the connection function
+connectDB();
+
+module.exports = { connectDB, mongoose };
