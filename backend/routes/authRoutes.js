@@ -235,6 +235,45 @@ router.get('/profile', authenticateToken, async (req, res) => {
   }
 });
 
+// Verify token endpoint
+router.get('/verify-token', authenticateToken, async (req, res) => {
+  try {
+    // If we reach here, the token is valid (authenticateToken middleware passed)
+    const user = await User.findById(req.user._id).select('-password');
+    
+    if (!user) {
+      return res.status(404).json({
+        status: 'error',
+        message: 'User not found'
+      });
+    }
+
+    res.json({
+      status: 'success',
+      message: 'Token is valid',
+      data: {
+        user: {
+          id: user._id,
+          username: user.username,
+          email: user.email,
+          firstName: user.firstName,
+          lastName: user.lastName,
+          role: user.role,
+          permissions: user.permissions,
+          department: user.department,
+          position: user.position
+        }
+      }
+    });
+  } catch (error) {
+    console.error('Token verification error:', error);
+    res.status(500).json({
+      status: 'error',
+      message: 'Internal server error'
+    });
+  }
+});
+
 // Update user profile
 router.put('/profile', authenticateToken, async (req, res) => {
   try {

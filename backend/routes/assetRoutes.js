@@ -66,10 +66,18 @@ router.get('/', authenticateToken, requirePermission('view_assets'), async (req,
     // Build filter object
     const filter = {};
     
+    // Only show active assets by default (exclude soft-deleted assets)
+    filter.isActive = true;
+    
     if (req.query.status) filter.status = req.query.status;
     if (req.query.category) filter.category = req.query.category;
     if (req.query.location) filter.location = { $regex: req.query.location, $options: 'i' };
     if (req.query.assignedTo) filter.assignedTo = req.query.assignedTo;
+    
+    // Allow including inactive assets if explicitly requested
+    if (req.query.includeInactive === 'true') {
+      delete filter.isActive;
+    }
     
     // Search functionality
     if (req.query.search) {

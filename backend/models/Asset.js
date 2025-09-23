@@ -52,6 +52,10 @@ const assetSchema = new mongoose.Schema({
     type: Array,
     default: []
   },
+  isActive: {
+    type: Boolean,
+    default: true
+  },
   // Accept ANY additional fields
   [String]: mongoose.Schema.Types.Mixed
 }, {

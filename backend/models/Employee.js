@@ -80,7 +80,7 @@ const employeeSchema = new mongoose.Schema({
   },
   status: {
     type: String,
-    enum: ['Active', 'Inactive', 'On Leave', 'Terminated'],
+    enum: ['Active', 'Relieved', 'On Leave', 'Terminated'],
     default: 'Active'
   },
   emergencyContact: {

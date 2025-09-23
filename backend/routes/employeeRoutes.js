@@ -75,6 +75,13 @@ router.get('/', authenticateToken, requirePermission('view_employees'), async (r
     // Build filter object
     const filter = {};
     
+    // Only show active employees by default unless specifically requested
+    if (req.query.includeInactive === 'true') {
+      // Show all employees (active and inactive)
+    } else {
+      filter.isActive = true; // Only show active employees
+    }
+    
     if (req.query.status) filter.status = req.query.status;
     if (req.query.department) filter.department = req.query.department;
     if (req.query.manager) filter.manager = req.query.manager;
