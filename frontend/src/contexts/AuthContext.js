@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
 import config from '../config/config';
 
 const AuthContext = createContext();
@@ -11,50 +11,133 @@ export const useAuth = () => {
   return context;
 };
 
+function decodeJwtPayload(token) {
+  try {
+    const base64 = token.split(".")[1];
+    return JSON.parse(atob(base64));
+  } catch {
+    return null;
+  }
+}
+
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const didHydrate = useRef(false);
 
-  // Helper function to check if token is expired
-  const isTokenExpired = (token) => {
-    try {
-      const payload = JSON.parse(atob(token.split('.')[1]));
-      const currentTime = Date.now() / 1000;
-      return payload.exp < currentTime;
-    } catch (error) {
-      return true; // If we can't parse the token, consider it expired
-    }
-  };
-
-  // Load user from localStorage on app start
+  // Hydrate authentication state
   useEffect(() => {
+    if (didHydrate.current) return; // prevent StrictMode double-run
+    didHydrate.current = true;
+
+    console.log('🔍 AuthContext: Starting authentication hydration...');
+    
     const token = localStorage.getItem('token');
     const savedUser = localStorage.getItem('user');
     
-    if (token && savedUser) {
+    console.log('🔍 AuthContext: Token found:', !!token);
+    console.log('🔍 AuthContext: User found:', !!savedUser);
+
+    if (!token) {
+      console.log('🔍 AuthContext: No token found, user not authenticated');
+      setUser(null);
+      setLoading(false);
+      return;
+    }
+
+    // Check if token is expired
+    const payload = decodeJwtPayload(token);
+    if (!payload || payload.exp < Date.now() / 1000) {
+      console.log('❌ AuthContext: Token expired, clearing localStorage');
+      localStorage.removeItem('user');
+      localStorage.removeItem('token');
+      setUser(null);
+      setLoading(false);
+      return;
+    }
+
+    console.log('✅ AuthContext: Token is valid');
+
+    // If we have cached user data, use it immediately
+    if (savedUser) {
       try {
-        // Check if token is expired
-        if (isTokenExpired(token)) {
-          console.log('Token expired, clearing localStorage');
-          localStorage.removeItem('user');
-          localStorage.removeItem('token');
-          setUser(null);
-        } else {
-          const userData = JSON.parse(savedUser);
-          console.log('Loaded user from localStorage:', userData);
-          setUser(userData);
-        }
+        const userData = JSON.parse(savedUser);
+        setUser(userData);
+        console.log('✅ AuthContext: User loaded from localStorage');
+        setLoading(false);
+        
+        // Verify token with backend in background
+        verifyTokenWithBackend(token);
+        return;
       } catch (error) {
-        console.error('Error loading saved user:', error);
+        console.error('❌ AuthContext: Error parsing saved user:', error);
+        // Continue to fetch from backend
+      }
+    }
+
+    // Fetch user data from backend
+    console.log('🔍 AuthContext: Fetching user data from backend...');
+    fetchUserFromBackend(token);
+  }, []);
+
+  // Fetch user data from backend
+  const fetchUserFromBackend = async (token) => {
+    try {
+      const response = await fetch(`${config.API_BASE_URL}/auth/verify-token`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        const userData = data.data.user;
+        setUser(userData);
+        localStorage.setItem('user', JSON.stringify(userData));
+        console.log('✅ AuthContext: User fetched from backend');
+      } else {
+        console.log('❌ AuthContext: Token verification failed, clearing localStorage');
         localStorage.removeItem('user');
         localStorage.removeItem('token');
         setUser(null);
       }
-    } else {
-      console.log('No saved user or token found in localStorage');
+    } catch (error) {
+      console.error('❌ AuthContext: Error fetching user from backend:', error);
+      localStorage.removeItem('user');
+      localStorage.removeItem('token');
+      setUser(null);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
-  }, []);
+  };
+
+  // Verify token with backend (background verification)
+  const verifyTokenWithBackend = async (token) => {
+    try {
+      console.log('🔍 AuthContext: Verifying token with backend in background...');
+      const response = await fetch(`${config.API_BASE_URL}/auth/verify-token`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (response.ok) {
+        console.log('✅ AuthContext: Token verified successfully in background');
+      } else {
+        console.log('❌ AuthContext: Token verification failed in background, logging out');
+        localStorage.removeItem('user');
+        localStorage.removeItem('token');
+        setUser(null);
+      }
+    } catch (error) {
+      console.error('❌ AuthContext: Error verifying token in background:', error);
+      // Don't logout on network errors during background verification
+    }
+  };
 
   // Save user to localStorage whenever user changes
   useEffect(() => {
@@ -175,6 +258,10 @@ export const AuthProvider = ({ children }) => {
         const userData = JSON.parse(savedUser);
         setUser(userData);
         console.log('Authentication successful, user set:', userData);
+        // Force a small delay to ensure state is updated before navigation
+        setTimeout(() => {
+          console.log('User state updated, ready for navigation');
+        }, 100);
       } catch (error) {
         console.error('Error loading user after auth:', error);
       }

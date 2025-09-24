@@ -72,8 +72,8 @@ const Settings = () => {
 
   const getTabButtonClass = (tab) => {
     const baseClass = "px-4 py-3 rounded-xl font-medium transition-all duration-300 border-b-2 relative group";
-    const activeClass = "border-gray-800 text-gray-900 bg-gray-50 shadow-sm";
-    const inactiveClass = "border-transparent text-gray-600 hover:text-gray-900 hover:bg-gray-50 hover:border-gray-300";
+    const activeClass = "border-accent-primary text-primary bg-tertiary shadow-theme-sm";
+    const inactiveClass = "border-transparent text-secondary hover:text-primary hover:bg-tertiary hover:border-accent-primary";
     return `${baseClass} ${activeTab === tab ? activeClass : inactiveClass}`;
   };
 
@@ -423,33 +423,32 @@ const Settings = () => {
   };
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex justify-between items-center">
-          <div>
-            <h2 className="text-2xl font-bold text-gray-900">Settings</h2>
-            <p className="text-gray-600 mt-1">Configure your application preferences</p>
-            {saveMessage && (
-              <div className={`mt-2 text-sm font-medium ${saveMessage.includes('successfully') ? 'text-green-600' : 'text-red-600'}`}>
-                <i className={`fas ${saveMessage.includes('successfully') ? 'fa-check-circle' : 'fa-exclamation-circle'} mr-2`}></i>
-                {saveMessage}
+    <div className="min-h-screen bg-secondary p-6">
+      <div className="w-full">
+        <div className="space-y-6">
+          {/* Header */}
+          <div className="bg-primary rounded-xl shadow-theme-md p-6 border border-theme">
+            <div className="flex justify-between items-center">
+              <div>
+                <h2 className="text-3xl font-bold text-primary">Settings</h2>
+                <p className="text-secondary mt-2">Configure your application preferences and account settings</p>
+                {saveMessage && (
+                  <div className={`mt-3 p-3 rounded-lg text-sm font-medium ${
+                    saveMessage.includes('successfully') 
+                      ? 'bg-green-50 text-green-700 border border-green-200' 
+                      : 'bg-red-50 text-red-700 border border-red-200'
+                  }`}>
+                    <i className={`fas ${saveMessage.includes('successfully') ? 'fa-check-circle' : 'fa-exclamation-circle'} mr-2`}></i>
+                    {saveMessage}
+                  </div>
+                )}
               </div>
-            )}
-          </div>
-          <button 
-            onClick={handleSaveSettings}
-            disabled={isSaving}
-            className="px-6 py-3 rounded-xl font-medium transition-all duration-300 border-none bg-gradient-to-r from-gray-800 to-gray-900 text-white shadow-lg hover:from-gray-700 hover:to-gray-800 hover:transform hover:-translate-y-1 hover:shadow-xl group disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            <i className={`fas ${isSaving ? 'fa-spinner fa-spin' : 'fa-save'} mr-2 group-hover:animate-bounce`}></i>
-            {isSaving ? 'Saving...' : 'Save Settings'}
-          </button>
         </div>
 
-      {/* Tab Navigation */}
-      <div className="bg-white rounded-2xl shadow-sm border border-gray-200">
-        <div className="border-b border-gray-200">
-          <nav className="flex space-x-8 px-6">
+          {/* Tab Navigation */}
+          <div className="bg-primary rounded-xl shadow-theme-md border border-theme">
+            <div className="border-b border-theme">
+              <nav className="flex space-x-8 px-6">
             <button
               className={getTabButtonClass('general')}
               onClick={() => setActiveTab('general')}
@@ -491,20 +490,20 @@ const Settings = () => {
           </nav>
         </div>
 
-        {/* Tab Content */}
-        <div className="p-6">
-          {/* General Settings */}
-          {activeTab === 'general' && (
-            <div className="space-y-6">
-              <div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">General Settings</h3>
-                <div className="space-y-4">
+            {/* Tab Content */}
+            <div className="p-6">
+              {/* General Settings */}
+              {activeTab === 'general' && (
+                <div className="space-y-6">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Company Name</label>
-                    <input
-                      type="text"
-                      className="w-full rounded-xl border border-gray-300 px-4 py-3 transition-all duration-300 text-gray-900 bg-white focus:border-gray-800 focus:ring-4 focus:ring-gray-800/10"
-                      placeholder="Enter your company name"
+                    <h3 className="text-xl font-semibold text-primary mb-4">General Settings</h3>
+                    <div className="space-y-4">
+                      <div>
+                        <label className="block text-sm font-medium text-primary mb-2">Company Name</label>
+                        <input
+                          type="text"
+                          className="w-full rounded-xl border border-theme px-4 py-3 transition-all duration-300 text-primary bg-primary focus:border-accent-primary focus:ring-4 focus:ring-accent-primary/10"
+                          placeholder="Enter your company name"
                       defaultValue="Asset Management Corp"
                     />
                   </div>
@@ -539,6 +538,18 @@ const Settings = () => {
                         </div>
                       </button>
                     </div>
+                  </div>
+                  
+                  {/* Save Button for General Tab */}
+                  <div className="pt-6 border-t border-theme">
+                    <button 
+                      onClick={handleSaveSettings}
+                      disabled={isSaving}
+                      className="px-6 py-3 rounded-xl font-medium transition-all duration-300 border-none bg-accent-primary text-white shadow-theme-md hover-accent hover:transform hover:-translate-y-1 hover:shadow-theme-lg group disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      <i className={`fas ${isSaving ? 'fa-spinner fa-spin' : 'fa-save'} mr-2 group-hover:animate-bounce`}></i>
+                      {isSaving ? 'Saving...' : 'Save General Settings'}
+                    </button>
                   </div>
                 </div>
               </div>
@@ -627,6 +638,18 @@ const Settings = () => {
                     </div>
                   </div>
                 </div>
+                
+                {/* Save Button for Appearance Tab */}
+                <div className="pt-6 border-t border-theme">
+                  <button 
+                    onClick={handleSaveSettings}
+                    disabled={isSaving}
+                    className="px-6 py-3 rounded-xl font-medium transition-all duration-300 border-none bg-accent-primary text-white shadow-theme-md hover-accent hover:transform hover:-translate-y-1 hover:shadow-theme-lg group disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <i className={`fas ${isSaving ? 'fa-spinner fa-spin' : 'fa-save'} mr-2 group-hover:animate-bounce`}></i>
+                    {isSaving ? 'Saving...' : 'Save Appearance Settings'}
+                  </button>
+                </div>
               </div>
             </div>
           )}
@@ -663,6 +686,18 @@ const Settings = () => {
                       max="480"
                     />
                   </div>
+                </div>
+                
+                {/* Save Button for Security Tab */}
+                <div className="pt-6 border-t border-theme">
+                  <button 
+                    onClick={handleSaveSettings}
+                    disabled={isSaving}
+                    className="px-6 py-3 rounded-xl font-medium transition-all duration-300 border-none bg-accent-primary text-white shadow-theme-md hover-accent hover:transform hover:-translate-y-1 hover:shadow-theme-lg group disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <i className={`fas ${isSaving ? 'fa-spinner fa-spin' : 'fa-save'} mr-2 group-hover:animate-bounce`}></i>
+                    {isSaving ? 'Saving...' : 'Save Security Settings'}
+                  </button>
                 </div>
               </div>
             </div>
@@ -1144,11 +1179,14 @@ const Settings = () => {
           )}
 
           {/* User Management Tab */}
-          {activeTab === 'users' && (
-            <UserManagement />
-          )}
+              {activeTab === 'users' && (
+                <UserManagement />
+              )}
+            </div>
+          </div>
         </div>
       </div>
+    </div>
 
       {/* Asset Page Settings Modal */}
       <AssetPageSettingsModal

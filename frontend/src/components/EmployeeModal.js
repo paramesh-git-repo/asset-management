@@ -135,16 +135,30 @@ const EmployeeModal = ({ show, onHide, onSave, employee, departments, roles, cat
     return dateString;
   };
 
-  // Convert YYYY-MM-DD to DD/MM/YYYY for display
+  // Convert YYYY-MM-DD or ISO datetime to DD/MM/YYYY for display
   const convertToDisplayFormat = (dateString) => {
     if (!dateString) return '';
+    
+    console.log('🔍 Converting date:', dateString);
+    
+    // Handle ISO datetime format (e.g., "2024-01-01T00:00:00.000Z")
+    if (dateString.includes('T')) {
+      const datePart = dateString.split('T')[0];
+      const [year, month, day] = datePart.split('-');
+      const result = `${day}/${month}/${year}`;
+      console.log('🔍 ISO conversion result:', result);
+      return result;
+    }
     
     // Check if it's in YYYY-MM-DD format
     if (/^\d{4}-\d{2}-\d{2}$/.test(dateString)) {
       const [year, month, day] = dateString.split('-');
-      return `${day}/${month}/${year}`;
+      const result = `${day}/${month}/${year}`;
+      console.log('🔍 YYYY-MM-DD conversion result:', result);
+      return result;
     }
     
+    console.log('🔍 No conversion needed, returning as is:', dateString);
     return dateString;
   };
 
@@ -159,7 +173,7 @@ const EmployeeModal = ({ show, onHide, onSave, employee, departments, roles, cat
     switch (status) {
       case 'Active':
         return { icon: 'fas fa-check-circle', color: 'text-green-600' };
-      case 'Inactive':
+      case 'Relieved':
         return { icon: 'fas fa-times-circle', color: 'text-red-600' };
       case 'Maintenance':
         return { icon: 'fas fa-tools', color: 'text-yellow-600' };
@@ -245,7 +259,7 @@ const EmployeeModal = ({ show, onHide, onSave, employee, departments, roles, cat
     switch (status) {
       case 'Active':
         return { icon: 'fas fa-check-circle', color: 'text-green-600' };
-      case 'Inactive':
+      case 'Relieved':
         return { icon: 'fas fa-times-circle', color: 'text-red-600' };
       case 'On Leave':
         return { icon: 'fas fa-umbrella-beach', color: 'text-yellow-600' };
@@ -979,7 +993,7 @@ const EmployeeModal = ({ show, onHide, onSave, employee, departments, roles, cat
                         style={{ zIndex: 9999 }}
                       >
                         <ul className="py-1">
-                          {['Active', 'Inactive', 'On Leave', 'Terminated'].map((status) => {
+                          {['Active', 'Relieved', 'On Leave', 'Terminated'].map((status) => {
                             const statusIcon = getEmployeeStatusIcon(status);
                             return (
                               <li key={status}>

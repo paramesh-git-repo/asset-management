@@ -155,11 +155,12 @@ const Assets = () => {
       filtered = filtered.filter(asset => asset.location === companyFilter);
     }
 
-    // Sort assets by creation date (newest first) to match backend sorting
+    // Sort assets by update date (most recently edited first)
     filtered.sort((a, b) => {
-      const dateA = new Date(a.createdAt || a.dateCreated || 0);
-      const dateB = new Date(b.createdAt || b.dateCreated || 0);
-      return dateB - dateA; // Newest first
+      // Use updatedAt if available, otherwise fall back to createdAt/dateCreated
+      const dateA = new Date(a.updatedAt || a.createdAt || a.dateCreated || 0);
+      const dateB = new Date(b.updatedAt || b.createdAt || b.dateCreated || 0);
+      return dateB - dateA; // Most recently updated first
     });
 
     console.log('🔍 Filtering assets:', {
@@ -223,7 +224,9 @@ const Assets = () => {
           ...assetData, 
           id: editingAsset.id,
           // Remove frontend-specific fields that backend doesn't expect
-          history: assetData.history || editingAsset.history || []
+          history: assetData.history || editingAsset.history || [],
+          // Ensure updatedAt is set for proper sorting
+          updatedAt: new Date().toISOString()
         };
         
         // Update in API

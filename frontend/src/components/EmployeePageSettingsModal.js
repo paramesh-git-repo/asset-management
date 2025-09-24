@@ -56,7 +56,7 @@ const EmployeePageSettingsModal = ({ show, onHide }) => {
 
   const [customEmployeeStatuses, setCustomEmployeeStatuses] = useState([
     { id: 1, name: 'Active', icon: 'fas fa-check-circle', color: 'text-green-600' },
-    { id: 2, name: 'Inactive', icon: 'fas fa-times-circle', color: 'text-red-600' },
+    { id: 2, name: 'Relieved', icon: 'fas fa-times-circle', color: 'text-red-600' },
     { id: 3, name: 'On Leave', icon: 'fas fa-calendar-alt', color: 'text-yellow-600' },
     { id: 4, name: 'Terminated', icon: 'fas fa-user-slash', color: 'text-gray-600' }
   ]);

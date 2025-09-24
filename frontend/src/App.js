@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
+import ProtectedRoute from './components/ProtectedRoute';
 import Sidebar from './components/Sidebar';
 import Header from './components/Header';
 import Auth from './components/Auth';
@@ -13,16 +14,9 @@ import Settings from './pages/Settings';
 
 // Main App Content Component
 function AppContent() {
-  const { user, loading, handleAuthSuccess } = useAuth();
+  const { user, loading } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
-
-  // Ensure we start on dashboard when user logs in
-  useEffect(() => {
-    if (user && location.pathname === '/') {
-      navigate('/dashboard');
-    }
-  }, [user, navigate, location.pathname]);
 
   // Get current page from the URL path
   const getCurrentPage = () => {
@@ -38,8 +32,12 @@ function AppContent() {
 
   // Load theme from localStorage
   useEffect(() => {
-
     // Load and apply saved theme
+    const savedTheme = localStorage.getItem('theme');
+    if (savedTheme) {
+      document.documentElement.setAttribute('data-theme', savedTheme);
+    }
+    
     const savedSettings = localStorage.getItem('settings');
     if (savedSettings) {
       try {
@@ -61,6 +59,19 @@ function AppContent() {
     }
   }, []);
 
+  // Handle authentication redirects
+  useEffect(() => {
+    if (!loading) {
+      // If user is authenticated and on login page, redirect to dashboard
+      if (user && location.pathname === '/login') {
+        navigate('/dashboard', { replace: true });
+      }
+      // Only redirect to login if user is explicitly not authenticated (not just loading)
+      else if (!user && location.pathname !== '/login' && location.pathname !== '/') {
+        navigate('/login', { replace: true });
+      }
+    }
+  }, [user, loading, location.pathname, navigate]);
 
   // Show loading spinner while checking authentication
   if (loading) {
@@ -71,9 +82,9 @@ function AppContent() {
     );
   }
 
-  // Show Auth component if not authenticated
-  if (!user) {
-    return <Auth onAuthSuccess={handleAuthSuccess} />;
+  // Show Auth component only if not authenticated and not loading
+  if (!user && !loading) {
+    return <Auth />;
   }
 
   // Show main app if authenticated
@@ -90,11 +101,32 @@ function AppContent() {
         <div className="content-wrapper">
           <Routes>
             <Route path="/" element={<Navigate to="/dashboard" replace />} />
-            <Route path="/dashboard" element={<Dashboard />} />
-            <Route path="/assets" element={<Assets />} />
-            <Route path="/employees" element={<Employees />} />
-            <Route path="/timeline" element={<Timeline />} />
-            <Route path="/settings" element={<Settings />} />
+            <Route path="/login" element={<Navigate to="/dashboard" replace />} />
+            <Route path="/dashboard" element={
+              <ProtectedRoute>
+                <Dashboard />
+              </ProtectedRoute>
+            } />
+            <Route path="/assets" element={
+              <ProtectedRoute>
+                <Assets />
+              </ProtectedRoute>
+            } />
+            <Route path="/employees" element={
+              <ProtectedRoute>
+                <Employees />
+              </ProtectedRoute>
+            } />
+            <Route path="/timeline" element={
+              <ProtectedRoute>
+                <Timeline />
+              </ProtectedRoute>
+            } />
+            <Route path="/settings" element={
+              <ProtectedRoute>
+                <Settings />
+              </ProtectedRoute>
+            } />
           </Routes>
         </div>
       </div>

@@ -419,7 +419,7 @@ const Employees = () => {
   ];
 
   // Combine default and custom statuses for asset creation
-  const defaultStatuses = ['Active', 'Inactive', 'Maintenance', 'Retired'];
+  const defaultStatuses = ['Active', 'Relieved', 'Maintenance', 'Retired'];
 
   // Get removed defaults
   const { removedCategories, removedStatuses } = getRemovedDefaults();

@@ -10,6 +10,7 @@ const AssetModal = ({ show, onHide, onSave, asset, categories, statuses, employe
     location: '',
     assignedTo: '',
     description: '',
+    value: '',
     history: []
   });
   const [errors, setErrors] = useState({});
@@ -20,6 +21,9 @@ const AssetModal = ({ show, onHide, onSave, asset, categories, statuses, employe
   const [showStatusDropdown, setShowStatusDropdown] = useState(false);
   const [showAssignedToDropdown, setShowAssignedToDropdown] = useState(false);
   const [showLocationDropdown, setShowLocationDropdown] = useState(false);
+  
+  // Search state for assigned to dropdown
+  const [assignedToSearch, setAssignedToSearch] = useState('');
   
   // Custom sub categories from settings
   const [customSubCategories, setCustomSubCategories] = useState([]);
@@ -141,6 +145,7 @@ const AssetModal = ({ show, onHide, onSave, asset, categories, statuses, employe
           location: asset.location || '',
           assignedTo: asset.assignedTo || '',
           description: asset.description || '',
+          value: asset.value || '',
           history: asset.history || []
         });
       } else {
@@ -154,6 +159,7 @@ const AssetModal = ({ show, onHide, onSave, asset, categories, statuses, employe
           location: '',
           assignedTo: '',
           description: '',
+          value: '',
           history: []
         });
       }
@@ -233,6 +239,14 @@ const AssetModal = ({ show, onHide, onSave, asset, categories, statuses, employe
       newErrors.status = 'Status is required';
     }
 
+    // Validate value if provided
+    if (formData.value && formData.value.trim()) {
+      const value = parseFloat(formData.value);
+      if (isNaN(value) || value < 0) {
+        newErrors.value = 'Asset value must be a valid positive number';
+      }
+    }
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -247,7 +261,9 @@ const AssetModal = ({ show, onHide, onSave, asset, categories, statuses, employe
         assetId: formData.assetId.trim() || generateAssetId(), // Use user input or generate if empty
         location: formData.location || 'Unspecified Location',
         // Automatically set assigned date if asset is assigned to an employee
-        assignedDate: formData.assignedTo ? new Date().toISOString() : null
+        assignedDate: formData.assignedTo ? new Date().toISOString() : null,
+        // Set updatedAt to current timestamp for sorting
+        updatedAt: new Date().toISOString()
       };
       
       // Add history entry for new asset creation
@@ -361,6 +377,7 @@ const AssetModal = ({ show, onHide, onSave, asset, categories, statuses, employe
       // assignedDate will be set automatically when saving
     }));
     setShowAssignedToDropdown(false);
+    setAssignedToSearch(''); // Clear search when selection is made
     
     // Add history entry if assignment changed
     if (oldValue !== employeeName) {
@@ -371,10 +388,25 @@ const AssetModal = ({ show, onHide, onSave, asset, categories, statuses, employe
       }
     }
   };
+
+  // Filter employees based on search
+  const filteredEmployees = employees.filter(employee => {
+    if (!assignedToSearch) return true;
+    const fullName = `${employee.firstName} ${employee.lastName}`.toLowerCase();
+    return fullName.includes(assignedToSearch.toLowerCase());
+  });
   
   // Handle click outside dropdown
   const handleDropdownClick = (e) => {
     e.stopPropagation();
+  };
+
+  // Clear search when dropdown is closed
+  const handleAssignedToDropdownToggle = () => {
+    setShowAssignedToDropdown(!showAssignedToDropdown);
+    if (showAssignedToDropdown) {
+      setAssignedToSearch(''); // Clear search when closing
+    }
   };
   
   // Add history entry
@@ -520,8 +552,8 @@ const AssetModal = ({ show, onHide, onSave, asset, categories, statuses, employe
                   name="assetId"
                   value={formData.assetId}
                   onChange={handleInputChange}
-                  className={`w-full rounded-xl border px-4 py-3 pl-12 transition-all duration-300 text-white bg-black focus:border-gray-500 focus:ring-4 focus:ring-gray-500/50 ${
-                    errors.assetId ? 'border-red-500' : 'border-gray-800'
+                  className={`w-full rounded-xl border px-4 py-3 pl-12 transition-all duration-300 text-gray-900 bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/50 ${
+                    errors.assetId ? 'border-red-500' : 'border-gray-300'
                   }`}
                   placeholder="Enter Asset ID"
                 />
@@ -794,6 +826,32 @@ const AssetModal = ({ show, onHide, onSave, asset, categories, statuses, employe
                   <div className="text-red-500 text-sm mt-1">{errors.location}</div>
                 )}
               </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Asset Value (₹)
+                </label>
+                <div className="relative">
+                  <input
+                    type="number"
+                    name="value"
+                    value={formData.value}
+                    onChange={handleInputChange}
+                    className={`w-full rounded-xl border px-4 py-3 pl-10 transition-all duration-300 text-gray-900 bg-white focus:border-gray-800 focus:ring-4 focus:ring-gray-800/10 ${
+                      errors.value ? 'border-red-500' : 'border-gray-300'
+                    }`}
+                    placeholder="Enter asset value in rupees"
+                    min="0"
+                    step="1"
+                  />
+                  <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                    <span className="text-gray-500 text-sm">₹</span>
+                  </div>
+                </div>
+                {errors.value && (
+                  <div className="text-red-500 text-sm mt-1">{errors.value}</div>
+                )}
+              </div>
               
               <div className="relative">
                 <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -803,9 +861,7 @@ const AssetModal = ({ show, onHide, onSave, asset, categories, statuses, employe
                   <button
                     type="button"
                     className={`assigned-to-button w-full rounded-xl border border-gray-300 px-4 py-3 transition-all duration-300 text-gray-900 bg-white focus:border-gray-800 focus:ring-4 focus:ring-gray-800/10 text-left flex items-center justify-between`}
-                    onClick={() => {
-                      setShowAssignedToDropdown(!showAssignedToDropdown);
-                    }}
+                    onClick={handleAssignedToDropdownToggle}
                   >
                     <span className={formData.assignedTo ? 'text-gray-900' : 'text-gray-500'}>
                       {formData.assignedTo || 'Unassigned'}
@@ -815,36 +871,56 @@ const AssetModal = ({ show, onHide, onSave, asset, categories, statuses, employe
                   
                   {showAssignedToDropdown && (
                     <div 
-                      className="assigned-to-dropdown absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto"
+                      className="assigned-to-dropdown absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-xl shadow-lg max-h-60 overflow-hidden"
                       onClick={handleDropdownClick}
                       style={{ zIndex: 9999 }}
                     >
-                      <ul className="py-1">
-                        <li>
-                          <button
-                            type="button"
-                            onClick={() => handleAssignedToSelect('')}
-                            className="w-full px-4 py-3 text-left hover:bg-gray-100 transition-colors duration-200 flex items-center gap-3"
-                          >
-                            <i className="fas fa-user-slash text-red-500 w-4"></i>
-                            <span className="text-gray-900">Unassigned</span>
-                          </button>
-                        </li>
-                        {employees
-                          .filter(emp => emp.status === 'Active')
-                          .map((employee, index) => (
-                            <li key={employee._id || employee.id || `employee-${index}`}>
-                              <button
-                                type="button"
-                                onClick={() => handleAssignedToSelect(employee.fullName || `${employee.firstName} ${employee.lastName}`)}
-                                className="w-full px-4 py-3 text-left hover:bg-gray-100 transition-colors duration-200 flex items-center gap-3"
-                              >
-                                <i className="fas fa-user text-blue-600 w-4"></i>
-                                <span className="text-gray-900">{employee.fullName || `${employee.firstName} ${employee.lastName}`} ({employee.department})</span>
-                              </button>
-                            </li>
-                          ))}
-                      </ul>
+                      {/* Search Bar */}
+                      <div className="p-3 border-b border-gray-200">
+                        <div className="relative">
+                          <input
+                            type="text"
+                            value={assignedToSearch}
+                            onChange={(e) => setAssignedToSearch(e.target.value)}
+                            placeholder="Search..."
+                            className="w-full px-3 py-2 pl-8 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            onClick={(e) => e.stopPropagation()}
+                          />
+                          <div className="absolute inset-y-0 left-0 flex items-center pl-2 pointer-events-none">
+                            <i className="fas fa-search text-gray-400 text-sm"></i>
+                          </div>
+                        </div>
+                      </div>
+                      
+                      {/* Employee List */}
+                      <div className="max-h-48 overflow-y-auto">
+                        <ul className="py-1">
+                          <li>
+                            <button
+                              type="button"
+                              onClick={() => handleAssignedToSelect('')}
+                              className="w-full px-4 py-3 text-left hover:bg-gray-100 transition-colors duration-200 flex items-center gap-3"
+                            >
+                              <i className="fas fa-user-slash text-red-500 w-4"></i>
+                              <span className="text-gray-900">Unassigned</span>
+                            </button>
+                          </li>
+                          {filteredEmployees
+                            .filter(emp => emp.status === 'Active')
+                            .map((employee, index) => (
+                              <li key={employee._id || employee.id || `employee-${index}`}>
+                                <button
+                                  type="button"
+                                  onClick={() => handleAssignedToSelect(employee.fullName || `${employee.firstName} ${employee.lastName}`)}
+                                  className="w-full px-4 py-3 text-left hover:bg-gray-100 transition-colors duration-200 flex items-center gap-3"
+                                >
+                                  <i className="fas fa-user text-blue-600 w-4"></i>
+                                  <span className="text-gray-900">{employee.fullName || `${employee.firstName} ${employee.lastName}`} ({employee.department})</span>
+                                </button>
+                              </li>
+                            ))}
+                        </ul>
+                      </div>
                     </div>
                   )}
                 </div>

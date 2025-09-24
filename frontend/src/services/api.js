@@ -31,6 +31,7 @@ async function apiCall(url, options = {}) {
       
       // Handle token expiration
       if (response.status === 401 && (errorData.message === 'Token expired' || errorData.message === 'Access token required')) {
+        console.log('🔍 API: 401 error detected, clearing localStorage');
         localStorage.removeItem('user');
         localStorage.removeItem('token');
         window.location.reload(); // This will trigger the AuthContext to show login

@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 
-export default function Auth({ onAuthSuccess }) {
+export default function Auth() {
   const [isLogin, setIsLogin] = useState(true);
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -11,7 +12,16 @@ export default function Auth({ onAuthSuccess }) {
   const [error, setError] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   
-  const { login, register } = useAuth();
+  const { user, login, register } = useAuth();
+  const navigate = useNavigate();
+
+  // Redirect to dashboard if user is already authenticated
+  useEffect(() => {
+    if (user) {
+      console.log('User already authenticated, redirecting to dashboard');
+      navigate('/dashboard', { replace: true });
+    }
+  }, [user, navigate]);
 
   // Clear error when user starts typing
   const clearError = () => {
@@ -35,7 +45,14 @@ export default function Auth({ onAuthSuccess }) {
         
         // Handle login result
         if (result && result.success) {
-          onAuthSuccess(); // notify parent (App.js) that auth worked
+          // Clear form after successful login
+          setEmail("");
+          setPassword("");
+          setError("");
+          // User state is already set by the login function in AuthContext
+          // Redirect to dashboard after successful login
+          console.log('Login successful, redirecting to dashboard');
+          navigate('/dashboard', { replace: true });
         } else {
           const errorMessage = result?.error || "Login failed. Please check your credentials.";
           setError(errorMessage);
@@ -54,7 +71,15 @@ export default function Auth({ onAuthSuccess }) {
         
         // Handle registration result
         if (result && result.success) {
-          onAuthSuccess();
+          // Clear form after successful registration
+          setName("");
+          setEmail("");
+          setPassword("");
+          setError("");
+          // User state is already set by the register function in AuthContext
+          // Redirect to dashboard after successful registration
+          console.log('Registration successful, redirecting to dashboard');
+          navigate('/dashboard', { replace: true });
         } else {
           const errorMessage = result?.error || "Registration failed. Please try again.";
           setError(errorMessage);
