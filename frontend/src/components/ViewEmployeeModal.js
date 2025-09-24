@@ -10,6 +10,7 @@ const ViewEmployeeModal = ({ show, onHide, employee }) => {
     const loadAssignedAssets = async () => {
       if (show && employee) {
         try {
+          console.log('🔍 ViewEmployeeModal: Loading assigned assets for employee:', employee.firstName, employee.lastName);
           const result = await assetAPI.getAll();
           
           if (result && result.status === 'success') {
@@ -17,6 +18,7 @@ const ViewEmployeeModal = ({ show, onHide, employee }) => {
             const employeeAssets = assets.filter(asset => 
               asset.assignedTo === (employee.fullName || `${employee.firstName} ${employee.lastName}`)
             );
+            console.log('🔍 ViewEmployeeModal: Found assigned assets:', employeeAssets.length);
             setAssignedAssets(employeeAssets);
           } else {
             console.error('Error loading assigned assets:', result?.message || 'Unknown error');
@@ -30,7 +32,7 @@ const ViewEmployeeModal = ({ show, onHide, employee }) => {
     };
 
     loadAssignedAssets();
-  }, [show, employee]);
+  }, [show, employee, employee?.handoverDetails, employee?.updatedAt]);
 
   const handleBackdropClick = (e) => {
     // Only close if clicking on the backdrop, not the modal content

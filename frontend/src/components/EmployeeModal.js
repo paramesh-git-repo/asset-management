@@ -159,7 +159,8 @@ const EmployeeModal = ({ show, onHide, onSave, employee, employees = [], departm
       setFormData(prev => ({
         ...prev,
         status: pendingStatusChange,
-        handoverDetails: handoverData
+        handoverDetails: handoverData,
+        updatedAt: new Date().toISOString()
       }));
       
       // Close handover modal and reset pending change

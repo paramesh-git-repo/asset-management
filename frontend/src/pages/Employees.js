@@ -186,6 +186,12 @@ const Employees = () => {
           return updated;
         });
         
+        // Update viewingEmployee if it's the same employee being edited
+        if (viewingEmployee && viewingEmployee.id === editingEmployee.id) {
+          setViewingEmployee({ ...updatedEmployee, id: editingEmployee.id });
+          console.log('🔍 Updated viewingEmployee with new data');
+        }
+        
         console.log('✅ Employee updated successfully:', updatedEmployee);
         showNotification('Employee updated successfully!', 'success');
       } else {
@@ -786,6 +792,7 @@ const Employees = () => {
 
       {/* View Employee Modal */}
       <ViewEmployeeModal
+        key={viewingEmployee?.id || 'no-employee'}
         show={showViewModal}
         onHide={() => {
           setShowViewModal(false);
