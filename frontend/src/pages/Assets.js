@@ -483,7 +483,7 @@ const Assets = () => {
   ];
 
   // Combine default and custom statuses
-  const defaultStatuses = ['Active', 'Inactive', 'Maintenance', 'Retired'];
+  const defaultStatuses = ['Active', 'Inactive', 'Maintenance', 'Repaired'];
 
   // Get removed defaults
   const { removedCategories, removedStatuses } = getRemovedDefaults();
