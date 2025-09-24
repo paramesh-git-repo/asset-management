@@ -146,6 +146,96 @@ const ViewEmployeeModal = ({ show, onHide, employee }) => {
             </div>
           </div>
 
+          {/* Handover Details Section - Only show for Relieved or Terminated employees */}
+          {(employee.status === 'Relieved' || employee.status === 'Terminated') && employee.handoverDetails && (
+            <div>
+              <h6 className="text-gray-500 font-semibold mb-4 flex items-center gap-2">
+                <i className="fas fa-handshake text-blue-600"></i>
+                Handover Details
+              </h6>
+              <div className="bg-blue-50 rounded-xl p-6 border border-blue-200">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <h6 className="text-sm font-semibold text-blue-800 mb-3">Handover Information</h6>
+                    <div className="space-y-3">
+                      <div className="flex justify-between">
+                        <span className="text-sm text-blue-700 font-medium">Handover Date:</span>
+                        <span className="text-sm text-blue-900">{formatDate(employee.handoverDetails.handoverDate)}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-sm text-blue-700 font-medium">Handover To:</span>
+                        <span className="text-sm text-blue-900">{employee.handoverDetails.handoverTo}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-sm text-blue-700 font-medium">Reason:</span>
+                        <span className="text-sm text-blue-900">{employee.handoverDetails.handoverReason}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-sm text-blue-700 font-medium">Status:</span>
+                        <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
+                          employee.handoverDetails.handoverStatus === 'Completed' ? 'bg-green-100 text-green-800' :
+                          employee.handoverDetails.handoverStatus === 'In Progress' ? 'bg-yellow-100 text-yellow-800' :
+                          employee.handoverDetails.handoverStatus === 'Partial' ? 'bg-orange-100 text-orange-800' :
+                          'bg-gray-100 text-gray-800'
+                        }`}>
+                          {employee.handoverDetails.handoverStatus}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <h6 className="text-sm font-semibold text-blue-800 mb-3">Assets to Return</h6>
+                    {employee.handoverDetails.assetsToReturn && employee.handoverDetails.assetsToReturn.length > 0 ? (
+                      <div className="space-y-2">
+                        {employee.handoverDetails.assetsToReturn.map((assetId, index) => {
+                          const asset = assignedAssets.find(a => a.id === assetId);
+                          return (
+                            <div key={index} className="flex items-center justify-between bg-white rounded-lg p-2 border border-blue-200">
+                              <div>
+                                <span className="text-sm font-medium text-blue-900">
+                                  {asset ? asset.name : `Asset ID: ${assetId}`}
+                                </span>
+                                {asset && (
+                                  <span className="text-xs text-blue-600 ml-2">({asset.assetId})</span>
+                                )}
+                              </div>
+                              <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
+                                asset && asset.status === 'Active' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
+                              }`}>
+                                {asset ? asset.status : 'Unknown'}
+                              </span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    ) : (
+                      <p className="text-sm text-blue-600 italic">No assets marked for return</p>
+                    )}
+                  </div>
+                </div>
+                
+                {employee.handoverDetails.notes && (
+                  <div className="mt-4 pt-4 border-t border-blue-200">
+                    <h6 className="text-sm font-semibold text-blue-800 mb-2">Additional Notes</h6>
+                    <p className="text-sm text-blue-900 bg-white rounded-lg p-3 border border-blue-200">
+                      {employee.handoverDetails.notes}
+                    </p>
+                  </div>
+                )}
+                
+                {employee.handoverDetails.completedAt && (
+                  <div className="mt-4 pt-4 border-t border-blue-200">
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm font-semibold text-blue-800">Handover Completed:</span>
+                      <span className="text-sm text-blue-900">{formatDate(employee.handoverDetails.completedAt)}</span>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
           {/* Assigned Assets Section */}
           <div>
             <h6 className="text-gray-500 font-semibold mb-4">Assigned Assets ({assignedAssets.length})</h6>
