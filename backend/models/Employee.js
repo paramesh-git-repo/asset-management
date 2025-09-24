@@ -136,6 +136,38 @@ const employeeSchema = new mongoose.Schema({
   isActive: {
     type: Boolean,
     default: true
+  },
+  handoverDetails: {
+    handoverDate: {
+      type: Date,
+      default: null
+    },
+    handoverTo: {
+      type: String,
+      trim: true
+    },
+    handoverReason: {
+      type: String,
+      enum: ['Resignation', 'Termination', 'Retirement', 'Transfer', 'Other'],
+      default: null
+    },
+    assetsToReturn: [{
+      type: String // Asset IDs
+    }],
+    handoverStatus: {
+      type: String,
+      enum: ['Pending', 'In Progress', 'Completed', 'Partial'],
+      default: 'Pending'
+    },
+    notes: {
+      type: String,
+      trim: true,
+      maxlength: [1000, 'Handover notes cannot exceed 1000 characters']
+    },
+    completedAt: {
+      type: Date,
+      default: null
+    }
   }
 }, {
   timestamps: true,

@@ -719,11 +719,19 @@ const Employees = () => {
                     <td className="px-6 py-4 whitespace-nowrap text-gray-900">{employee.phone}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-gray-900">{formatDate(employee.hireDate)}</td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
-                        employee.status === 'Active' ? 'bg-gradient-to-r from-green-100 to-green-200 text-green-800 border border-green-300 shadow-sm' : 'bg-gradient-to-r from-gray-100 to-gray-200 text-gray-800 border border-gray-300 shadow-sm'
-                      }`}>
-                        {employee.status}
-                      </span>
+                      <div className="flex items-center gap-2">
+                        <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
+                          employee.status === 'Active' ? 'bg-gradient-to-r from-green-100 to-green-200 text-green-800 border border-green-300 shadow-sm' : 'bg-gradient-to-r from-gray-100 to-gray-200 text-gray-800 border border-gray-300 shadow-sm'
+                        }`}>
+                          {employee.status}
+                        </span>
+                        {employee.handoverDetails && (
+                          <span className="px-2 py-1 rounded-full text-xs font-semibold bg-blue-100 text-blue-800 border border-blue-300 shadow-sm flex items-center gap-1" title={`Handover to: ${employee.handoverDetails.handoverTo}`}>
+                            <i className="fas fa-handshake text-xs"></i>
+                            Handover
+                          </span>
+                        )}
+                      </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex space-x-2">
@@ -768,6 +776,7 @@ const Employees = () => {
         }}
         onSave={handleSaveEmployee}
         employee={editingEmployee}
+        employees={employees} // Pass employees list for handover functionality
         departments={departments}
         roles={roles}
         categories={categories}

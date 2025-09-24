@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { config } from '../config/config';
 import { assetAPI } from '../services/api';
+import HandoverModal from './HandoverModal';
 
-const EmployeeModal = ({ show, onHide, onSave, employee, departments, roles, categories = [], statuses = [], validationErrors = {} }) => {
+const EmployeeModal = ({ show, onHide, onSave, employee, employees = [], departments, roles, categories = [], statuses = [], validationErrors = {} }) => {
   const [formData, setFormData] = useState({
     employeeId: '',
     firstName: '',
@@ -45,6 +46,10 @@ const EmployeeModal = ({ show, onHide, onSave, employee, departments, roles, cat
   const [showDepartmentDropdown, setShowDepartmentDropdown] = useState(false);
   const [showPositionDropdown, setShowPositionDropdown] = useState(false);
   const [showEmployeeStatusDropdown, setShowEmployeeStatusDropdown] = useState(false);
+  
+  // Handover modal state
+  const [showHandoverModal, setShowHandoverModal] = useState(false);
+  const [pendingStatusChange, setPendingStatusChange] = useState(null);
   
   
   // Handle category selection from custom dropdown
@@ -102,10 +107,20 @@ const EmployeeModal = ({ show, onHide, onSave, employee, departments, roles, cat
   
   // Handle employee status selection from custom dropdown
   const handleEmployeeStatusSelect = (statusValue) => {
-    setFormData(prev => ({
-      ...prev,
-      status: statusValue
-    }));
+    // Check if changing to a status that requires handover
+    if ((statusValue === 'Relieved' || statusValue === 'Terminated') && 
+        employee && 
+        employee.status !== statusValue) {
+      // Store the pending status change and show handover modal
+      setPendingStatusChange(statusValue);
+      setShowHandoverModal(true);
+    } else {
+      // Direct status change for other statuses
+      setFormData(prev => ({
+        ...prev,
+        status: statusValue
+      }));
+    }
     setShowEmployeeStatusDropdown(false);
     
     // Clear error when user selects
@@ -115,6 +130,26 @@ const EmployeeModal = ({ show, onHide, onSave, employee, departments, roles, cat
         status: ''
       }));
     }
+  };
+
+  // Handle handover modal save
+  const handleHandoverSave = (handoverData) => {
+    // Update the employee status with the pending change
+    setFormData(prev => ({
+      ...prev,
+      status: pendingStatusChange,
+      handoverDetails: handoverData
+    }));
+    
+    // Close handover modal and reset pending change
+    setShowHandoverModal(false);
+    setPendingStatusChange(null);
+  };
+
+  // Handle handover modal cancel
+  const handleHandoverCancel = () => {
+    setShowHandoverModal(false);
+    setPendingStatusChange(null);
   };
 
   // Convert DD/MM/YYYY to YYYY-MM-DD for backend
@@ -1325,6 +1360,16 @@ const EmployeeModal = ({ show, onHide, onSave, employee, departments, roles, cat
           </div>
         </form>
       </div>
+
+      {/* Handover Modal */}
+      <HandoverModal
+        show={showHandoverModal}
+        onHide={handleHandoverCancel}
+        onSave={handleHandoverSave}
+        employee={employee}
+        employees={employees}
+        assets={assignedAssets}
+      />
     </div>
   );
 };
