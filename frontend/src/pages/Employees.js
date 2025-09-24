@@ -725,7 +725,7 @@ const Employees = () => {
                         }`}>
                           {employee.status}
                         </span>
-                        {employee.handoverDetails && (
+                        {employee.handoverDetails && (employee.status === 'Relieved' || employee.status === 'Terminated') && (
                           <span className="px-2 py-1 rounded-full text-xs font-semibold bg-blue-100 text-blue-800 border border-blue-300 shadow-sm flex items-center gap-1" title={`Handover to: ${employee.handoverDetails.handoverTo}`}>
                             <i className="fas fa-handshake text-xs"></i>
                             Handover
