@@ -11,6 +11,12 @@ const HandoverModal = ({ show, onHide, onSave, employee, employees = [], assets 
   });
   const [errors, setErrors] = useState({});
   const [selectedAssets, setSelectedAssets] = useState([]);
+  
+  // Dropdown states
+  const [showHandoverToDropdown, setShowHandoverToDropdown] = useState(false);
+  const [showReasonDropdown, setShowReasonDropdown] = useState(false);
+  const [showStatusDropdown, setShowStatusDropdown] = useState(false);
+  const [handoverToSearch, setHandoverToSearch] = useState('');
 
   // Reset form when modal opens/closes or employee changes
   useEffect(() => {
@@ -26,8 +32,51 @@ const HandoverModal = ({ show, onHide, onSave, employee, employees = [], assets 
       });
       setSelectedAssets([]);
       setErrors({});
+      setHandoverToSearch('');
+      setShowHandoverToDropdown(false);
+      setShowReasonDropdown(false);
+      setShowStatusDropdown(false);
     }
   }, [show, employee]);
+
+  // Helper functions for dropdowns
+  const getReasonIcon = (reason) => {
+    switch (reason) {
+      case 'Resignation': return 'fas fa-sign-out-alt text-blue-600';
+      case 'Termination': return 'fas fa-user-times text-red-600';
+      case 'Retirement': return 'fas fa-gift text-purple-600';
+      case 'Transfer': return 'fas fa-exchange-alt text-green-600';
+      case 'Other': return 'fas fa-question-circle text-gray-600';
+      default: return 'fas fa-question-circle text-gray-600';
+    }
+  };
+
+  const getStatusIcon = (status) => {
+    switch (status) {
+      case 'Pending': return 'fas fa-clock text-yellow-600';
+      case 'In Progress': return 'fas fa-spinner text-blue-600';
+      case 'Completed': return 'fas fa-check-circle text-green-600';
+      case 'Partial': return 'fas fa-exclamation-triangle text-orange-600';
+      default: return 'fas fa-clock text-yellow-600';
+    }
+  };
+
+  const getStatusColor = (status) => {
+    switch (status) {
+      case 'Pending': return 'bg-yellow-100 text-yellow-800 border-yellow-300';
+      case 'In Progress': return 'bg-blue-100 text-blue-800 border-blue-300';
+      case 'Completed': return 'bg-green-100 text-green-800 border-green-300';
+      case 'Partial': return 'bg-orange-100 text-orange-800 border-orange-300';
+      default: return 'bg-yellow-100 text-yellow-800 border-yellow-300';
+    }
+  };
+
+  // Filter employees for handover to dropdown
+  const filteredEmployees = employees.filter(emp => 
+    emp.id !== employee?.id && 
+    emp.status === 'Active' &&
+    (emp.name || `${emp.firstName} ${emp.lastName}`).toLowerCase().includes(handoverToSearch.toLowerCase())
+  );
 
   // Get assets assigned to the employee
   const getEmployeeAssets = () => {
@@ -61,6 +110,29 @@ const HandoverModal = ({ show, onHide, onSave, employee, employees = [], assets 
     } else {
       setSelectedAssets(prev => prev.filter(id => id !== assetId));
     }
+  };
+
+  // Dropdown selection handlers
+  const handleHandoverToSelect = (employeeName) => {
+    setFormData(prev => ({ ...prev, handoverTo: employeeName }));
+    setHandoverToSearch(employeeName);
+    setShowHandoverToDropdown(false);
+    if (errors.handoverTo) {
+      setErrors(prev => ({ ...prev, handoverTo: '' }));
+    }
+  };
+
+  const handleReasonSelect = (reason) => {
+    setFormData(prev => ({ ...prev, handoverReason: reason }));
+    setShowReasonDropdown(false);
+    if (errors.handoverReason) {
+      setErrors(prev => ({ ...prev, handoverReason: '' }));
+    }
+  };
+
+  const handleStatusSelect = (status) => {
+    setFormData(prev => ({ ...prev, handoverStatus: status }));
+    setShowStatusDropdown(false);
   };
 
   const validateForm = () => {
@@ -99,6 +171,25 @@ const HandoverModal = ({ show, onHide, onSave, employee, employees = [], assets 
   };
 
   const employeeAssets = getEmployeeAssets();
+
+  // Close dropdowns when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (!event.target.closest('.relative')) {
+        setShowHandoverToDropdown(false);
+        setShowReasonDropdown(false);
+        setShowStatusDropdown(false);
+      }
+    };
+
+    if (show) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [show]);
 
   if (!show) return null;
 
@@ -143,52 +234,122 @@ const HandoverModal = ({ show, onHide, onSave, employee, employees = [], assets 
             </div>
 
             {/* Handover To */}
-            <div>
+            <div className="relative">
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Handover To *
               </label>
-              <select
-                name="handoverTo"
-                value={formData.handoverTo}
-                onChange={handleInputChange}
-                className={`w-full rounded-xl border px-4 py-3 transition-all duration-300 text-gray-900 bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/50 ${
-                  errors.handoverTo ? 'border-red-500' : 'border-gray-300'
-                }`}
-              >
-                <option value="">Select employee to handover to</option>
-                {employees
-                  .filter(emp => emp.id !== employee?.id && emp.status === 'Active')
-                  .map(emp => (
-                    <option key={emp.id} value={emp.name || `${emp.firstName} ${emp.lastName}`}>
-                      {emp.name || `${emp.firstName} ${emp.lastName}`} ({emp.employeeId})
-                    </option>
-                  ))}
-              </select>
+              <div className="relative">
+                <input
+                  type="text"
+                  value={handoverToSearch}
+                  onChange={(e) => {
+                    setHandoverToSearch(e.target.value);
+                    setShowHandoverToDropdown(true);
+                    if (errors.handoverTo) setErrors(prev => ({ ...prev, handoverTo: '' }));
+                  }}
+                  onFocus={() => setShowHandoverToDropdown(true)}
+                  className={`w-full rounded-xl border px-4 py-3 pl-12 transition-all duration-300 text-gray-900 bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/50 ${
+                    errors.handoverTo ? 'border-red-500' : 'border-gray-300'
+                  }`}
+                  placeholder="Search and select employee"
+                />
+                <i className="fas fa-user absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+                <button
+                  type="button"
+                  onClick={() => setShowHandoverToDropdown(!showHandoverToDropdown)}
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                >
+                  <i className={`fas fa-chevron-${showHandoverToDropdown ? 'up' : 'down'}`}></i>
+                </button>
+              </div>
+              
+              {showHandoverToDropdown && (
+                <div 
+                  className="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto"
+                  onClick={(e) => e.stopPropagation()}
+                  style={{ zIndex: 9999 }}
+                >
+                  {filteredEmployees.length > 0 ? (
+                    <ul>
+                      {filteredEmployees.map(emp => (
+                        <li key={emp.id}>
+                          <button
+                            type="button"
+                            onClick={() => handleHandoverToSelect(emp.name || `${emp.firstName} ${emp.lastName}`)}
+                            className="w-full text-left px-4 py-3 hover:bg-gray-100 flex items-center gap-3"
+                          >
+                            <i className="fas fa-user text-blue-600"></i>
+                            <div>
+                              <div className="font-medium text-gray-900">
+                                {emp.name || `${emp.firstName} ${emp.lastName}`}
+                              </div>
+                              <div className="text-sm text-gray-500">{emp.employeeId}</div>
+                            </div>
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <div className="px-4 py-3 text-gray-500 text-center">
+                      <i className="fas fa-search text-gray-400 mb-2"></i>
+                      <p>No employees found</p>
+                    </div>
+                  )}
+                </div>
+              )}
               {errors.handoverTo && (
                 <div className="text-red-500 text-sm mt-1">{errors.handoverTo}</div>
               )}
             </div>
 
             {/* Handover Reason */}
-            <div>
+            <div className="relative">
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Handover Reason *
               </label>
-              <select
-                name="handoverReason"
-                value={formData.handoverReason}
-                onChange={handleInputChange}
-                className={`w-full rounded-xl border px-4 py-3 transition-all duration-300 text-gray-900 bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/50 ${
-                  errors.handoverReason ? 'border-red-500' : 'border-gray-300'
-                }`}
-              >
-                <option value="">Select reason</option>
-                <option value="Resignation">Resignation</option>
-                <option value="Termination">Termination</option>
-                <option value="Retirement">Retirement</option>
-                <option value="Transfer">Transfer</option>
-                <option value="Other">Other</option>
-              </select>
+              <div className="relative">
+                <button
+                  type="button"
+                  onClick={() => setShowReasonDropdown(!showReasonDropdown)}
+                  className={`w-full rounded-xl border px-4 py-3 pl-12 text-left transition-all duration-300 text-gray-900 bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/50 ${
+                    errors.handoverReason ? 'border-red-500' : 'border-gray-300'
+                  }`}
+                >
+                  {formData.handoverReason ? (
+                    <div className="flex items-center gap-3">
+                      <i className={getReasonIcon(formData.handoverReason)}></i>
+                      <span>{formData.handoverReason}</span>
+                    </div>
+                  ) : (
+                    <span className="text-gray-500">Select reason</span>
+                  )}
+                </button>
+                <i className="fas fa-question-circle absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+                <i className={`fas fa-chevron-${showReasonDropdown ? 'up' : 'down'} absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400`}></i>
+              </div>
+              
+              {showReasonDropdown && (
+                <div 
+                  className="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg"
+                  onClick={(e) => e.stopPropagation()}
+                  style={{ zIndex: 9999 }}
+                >
+                  <ul>
+                    {['Resignation', 'Termination', 'Retirement', 'Transfer', 'Other'].map(reason => (
+                      <li key={reason}>
+                        <button
+                          type="button"
+                          onClick={() => handleReasonSelect(reason)}
+                          className="w-full text-left px-4 py-3 hover:bg-gray-100 flex items-center gap-3"
+                        >
+                          <i className={getReasonIcon(reason)}></i>
+                          <span className="font-medium text-gray-900">{reason}</span>
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
               {errors.handoverReason && (
                 <div className="text-red-500 text-sm mt-1">{errors.handoverReason}</div>
               )}
@@ -233,21 +394,47 @@ const HandoverModal = ({ show, onHide, onSave, employee, employees = [], assets 
             )}
 
             {/* Handover Status */}
-            <div>
+            <div className="relative">
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Handover Status
               </label>
-              <select
-                name="handoverStatus"
-                value={formData.handoverStatus}
-                onChange={handleInputChange}
-                className="w-full rounded-xl border border-gray-300 px-4 py-3 transition-all duration-300 text-gray-900 bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/50"
-              >
-                <option value="Pending">Pending</option>
-                <option value="In Progress">In Progress</option>
-                <option value="Completed">Completed</option>
-                <option value="Partial">Partial</option>
-              </select>
+              <div className="relative">
+                <button
+                  type="button"
+                  onClick={() => setShowStatusDropdown(!showStatusDropdown)}
+                  className="w-full rounded-xl border border-gray-300 px-4 py-3 pl-12 text-left transition-all duration-300 text-gray-900 bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/50"
+                >
+                  <div className="flex items-center gap-3">
+                    <i className={getStatusIcon(formData.handoverStatus)}></i>
+                    <span>{formData.handoverStatus}</span>
+                  </div>
+                </button>
+                <i className="fas fa-tasks absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+                <i className={`fas fa-chevron-${showStatusDropdown ? 'up' : 'down'} absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400`}></i>
+              </div>
+              
+              {showStatusDropdown && (
+                <div 
+                  className="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg"
+                  onClick={(e) => e.stopPropagation()}
+                  style={{ zIndex: 9999 }}
+                >
+                  <ul>
+                    {['Pending', 'In Progress', 'Completed', 'Partial'].map(status => (
+                      <li key={status}>
+                        <button
+                          type="button"
+                          onClick={() => handleStatusSelect(status)}
+                          className="w-full text-left px-4 py-3 hover:bg-gray-100 flex items-center gap-3"
+                        >
+                          <i className={getStatusIcon(status)}></i>
+                          <span className="font-medium text-gray-900">{status}</span>
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
             </div>
 
             {/* Notes */}
