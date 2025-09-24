@@ -16,7 +16,6 @@ const HandoverModal = ({ show, onHide, onSave, employee, employees = [], assets 
   const [showHandoverToDropdown, setShowHandoverToDropdown] = useState(false);
   const [showReasonDropdown, setShowReasonDropdown] = useState(false);
   const [showStatusDropdown, setShowStatusDropdown] = useState(false);
-  const [handoverToSearch, setHandoverToSearch] = useState('');
 
   // Reset form when modal opens/closes or employee changes
   useEffect(() => {
@@ -32,7 +31,6 @@ const HandoverModal = ({ show, onHide, onSave, employee, employees = [], assets 
       });
       setSelectedAssets([]);
       setErrors({});
-      setHandoverToSearch('');
       setShowHandoverToDropdown(false);
       setShowReasonDropdown(false);
       setShowStatusDropdown(false);
@@ -74,8 +72,7 @@ const HandoverModal = ({ show, onHide, onSave, employee, employees = [], assets 
   // Filter employees for handover to dropdown
   const filteredEmployees = employees.filter(emp => 
     emp.id !== employee?.id && 
-    emp.status === 'Active' &&
-    (emp.name || `${emp.firstName} ${emp.lastName}`).toLowerCase().includes(handoverToSearch.toLowerCase())
+    emp.status === 'Active'
   );
 
   // Get assets assigned to the employee
@@ -115,7 +112,6 @@ const HandoverModal = ({ show, onHide, onSave, employee, employees = [], assets 
   // Dropdown selection handlers
   const handleHandoverToSelect = (employeeName) => {
     setFormData(prev => ({ ...prev, handoverTo: employeeName }));
-    setHandoverToSearch(employeeName);
     setShowHandoverToDropdown(false);
     if (errors.handoverTo) {
       setErrors(prev => ({ ...prev, handoverTo: '' }));
@@ -244,27 +240,17 @@ const HandoverModal = ({ show, onHide, onSave, employee, employees = [], assets 
                 Handover To *
               </label>
               <div className="relative">
-                <input
-                  type="text"
-                  value={handoverToSearch}
-                  onChange={(e) => {
-                    setHandoverToSearch(e.target.value);
-                    setShowHandoverToDropdown(true);
-                    if (errors.handoverTo) setErrors(prev => ({ ...prev, handoverTo: '' }));
-                  }}
-                  onFocus={() => setShowHandoverToDropdown(true)}
-                  className={`w-full rounded-xl border px-4 py-3 pl-12 transition-all duration-300 text-gray-900 bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/50 ${
-                    errors.handoverTo ? 'border-red-500' : 'border-gray-300'
-                  }`}
-                  placeholder="Search and select employee"
-                />
-                <i className="fas fa-user absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
                 <button
                   type="button"
+                  className={`w-full rounded-xl border px-4 py-3 transition-all duration-300 text-gray-900 bg-white focus:border-gray-800 focus:ring-4 focus:ring-gray-800/10 text-left flex items-center justify-between ${
+                    errors.handoverTo ? 'border-red-500' : 'border-gray-300'
+                  }`}
                   onClick={() => setShowHandoverToDropdown(!showHandoverToDropdown)}
-                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
                 >
-                  <i className={`fas fa-chevron-${showHandoverToDropdown ? 'up' : 'down'}`}></i>
+                  <span className={formData.handoverTo ? 'text-gray-900' : 'text-gray-500'}>
+                    {formData.handoverTo || 'Select Employee'}
+                  </span>
+                  <i className={`fas fa-chevron-down transition-transform duration-200 ${showHandoverToDropdown ? 'rotate-180' : ''}`}></i>
                 </button>
               </div>
               
@@ -273,16 +259,16 @@ const HandoverModal = ({ show, onHide, onSave, employee, employees = [], assets 
                   className="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto"
                   style={{ zIndex: 9999 }}
                 >
-                  {filteredEmployees.length > 0 ? (
-                    <ul>
-                      {filteredEmployees.map(emp => (
+                  <ul className="py-1">
+                    {filteredEmployees.length > 0 ? (
+                      filteredEmployees.map(emp => (
                         <li key={emp.id}>
                           <button
                             type="button"
                             onClick={() => handleHandoverToSelect(emp.name || `${emp.firstName} ${emp.lastName}`)}
-                            className="w-full text-left px-4 py-3 hover:bg-gray-100 flex items-center gap-3"
+                            className="w-full px-4 py-3 text-left hover:bg-gray-100 transition-colors duration-200 flex items-center gap-3"
                           >
-                            <i className="fas fa-user text-blue-600"></i>
+                            <i className="fas fa-user text-blue-600 w-4"></i>
                             <div>
                               <div className="font-medium text-gray-900">
                                 {emp.name || `${emp.firstName} ${emp.lastName}`}
@@ -291,14 +277,16 @@ const HandoverModal = ({ show, onHide, onSave, employee, employees = [], assets 
                             </div>
                           </button>
                         </li>
-                      ))}
-                    </ul>
-                  ) : (
-                    <div className="px-4 py-3 text-gray-500 text-center">
-                      <i className="fas fa-search text-gray-400 mb-2"></i>
-                      <p>No employees found</p>
-                    </div>
-                  )}
+                      ))
+                    ) : (
+                      <li>
+                        <div className="px-4 py-3 text-gray-500 text-center">
+                          <i className="fas fa-search text-gray-400 mb-2"></i>
+                          <p>No employees found</p>
+                        </div>
+                      </li>
+                    )}
+                  </ul>
                 </div>
               )}
               {errors.handoverTo && (
@@ -314,22 +302,16 @@ const HandoverModal = ({ show, onHide, onSave, employee, employees = [], assets 
               <div className="relative">
                 <button
                   type="button"
-                  onClick={() => setShowReasonDropdown(!showReasonDropdown)}
-                  className={`w-full rounded-xl border px-4 py-3 pl-12 text-left transition-all duration-300 text-gray-900 bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/50 ${
+                  className={`w-full rounded-xl border px-4 py-3 transition-all duration-300 text-gray-900 bg-white focus:border-gray-800 focus:ring-4 focus:ring-gray-800/10 text-left flex items-center justify-between ${
                     errors.handoverReason ? 'border-red-500' : 'border-gray-300'
                   }`}
+                  onClick={() => setShowReasonDropdown(!showReasonDropdown)}
                 >
-                  {formData.handoverReason ? (
-                    <div className="flex items-center gap-3">
-                      <i className={getReasonIcon(formData.handoverReason)}></i>
-                      <span>{formData.handoverReason}</span>
-                    </div>
-                  ) : (
-                    <span className="text-gray-500">Select reason</span>
-                  )}
+                  <span className={formData.handoverReason ? 'text-gray-900' : 'text-gray-500'}>
+                    {formData.handoverReason || 'Select Reason'}
+                  </span>
+                  <i className={`fas fa-chevron-down transition-transform duration-200 ${showReasonDropdown ? 'rotate-180' : ''}`}></i>
                 </button>
-                <i className="fas fa-question-circle absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
-                <i className={`fas fa-chevron-${showReasonDropdown ? 'up' : 'down'} absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400`}></i>
               </div>
               
               {showReasonDropdown && (
@@ -337,16 +319,16 @@ const HandoverModal = ({ show, onHide, onSave, employee, employees = [], assets 
                   className="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg"
                   style={{ zIndex: 9999 }}
                 >
-                  <ul>
+                  <ul className="py-1">
                     {['Resignation', 'Termination', 'Retirement', 'Transfer', 'Other'].map(reason => (
                       <li key={reason}>
                         <button
                           type="button"
                           onClick={() => handleReasonSelect(reason)}
-                          className="w-full text-left px-4 py-3 hover:bg-gray-100 flex items-center gap-3"
+                          className="w-full px-4 py-3 text-left hover:bg-gray-100 transition-colors duration-200 flex items-center gap-3"
                         >
-                          <i className={getReasonIcon(reason)}></i>
-                          <span className="font-medium text-gray-900">{reason}</span>
+                          <i className={`${getReasonIcon(reason)} w-4`}></i>
+                          <span className="text-gray-900">{reason}</span>
                         </button>
                       </li>
                     ))}
@@ -404,16 +386,12 @@ const HandoverModal = ({ show, onHide, onSave, employee, employees = [], assets 
               <div className="relative">
                 <button
                   type="button"
+                  className="w-full rounded-xl border border-gray-300 px-4 py-3 transition-all duration-300 text-gray-900 bg-white focus:border-gray-800 focus:ring-4 focus:ring-gray-800/10 text-left flex items-center justify-between"
                   onClick={() => setShowStatusDropdown(!showStatusDropdown)}
-                  className="w-full rounded-xl border border-gray-300 px-4 py-3 pl-12 text-left transition-all duration-300 text-gray-900 bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/50"
                 >
-                  <div className="flex items-center gap-3">
-                    <i className={getStatusIcon(formData.handoverStatus)}></i>
-                    <span>{formData.handoverStatus}</span>
-                  </div>
+                  <span className="text-gray-900">{formData.handoverStatus}</span>
+                  <i className={`fas fa-chevron-down transition-transform duration-200 ${showStatusDropdown ? 'rotate-180' : ''}`}></i>
                 </button>
-                <i className="fas fa-tasks absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
-                <i className={`fas fa-chevron-${showStatusDropdown ? 'up' : 'down'} absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400`}></i>
               </div>
               
               {showStatusDropdown && (
@@ -421,16 +399,16 @@ const HandoverModal = ({ show, onHide, onSave, employee, employees = [], assets 
                   className="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg"
                   style={{ zIndex: 9999 }}
                 >
-                  <ul>
+                  <ul className="py-1">
                     {['Pending', 'In Progress', 'Completed', 'Partial'].map(status => (
                       <li key={status}>
                         <button
                           type="button"
                           onClick={() => handleStatusSelect(status)}
-                          className="w-full text-left px-4 py-3 hover:bg-gray-100 flex items-center gap-3"
+                          className="w-full px-4 py-3 text-left hover:bg-gray-100 transition-colors duration-200 flex items-center gap-3"
                         >
-                          <i className={getStatusIcon(status)}></i>
-                          <span className="font-medium text-gray-900">{status}</span>
+                          <i className={`${getStatusIcon(status)} w-4`}></i>
+                          <span className="text-gray-900">{status}</span>
                         </button>
                       </li>
                     ))}
