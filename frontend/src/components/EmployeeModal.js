@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { config } from '../config/config';
 import { assetAPI } from '../services/api';
+import dataService from '../services/dataService';
 import HandoverModal from './HandoverModal';
 
 const EmployeeModal = ({ show, onHide, onSave, employee, employees = [], departments, roles, categories = [], statuses = [], validationErrors = {} }) => {
@@ -133,17 +134,45 @@ const EmployeeModal = ({ show, onHide, onSave, employee, employees = [], departm
   };
 
   // Handle handover modal save
-  const handleHandoverSave = (handoverData) => {
-    // Update the employee status with the pending change
-    setFormData(prev => ({
-      ...prev,
-      status: pendingStatusChange,
-      handoverDetails: handoverData
-    }));
-    
-    // Close handover modal and reset pending change
-    setShowHandoverModal(false);
-    setPendingStatusChange(null);
+  const handleHandoverSave = async (handoverData) => {
+    try {
+      // Unassign selected assets from the employee
+      if (handoverData.assetsToReturn && handoverData.assetsToReturn.length > 0) {
+        console.log('🔍 Unassigning assets:', handoverData.assetsToReturn);
+        
+        // Update each asset to remove assignment
+        for (const assetId of handoverData.assetsToReturn) {
+          try {
+            await dataService.updateAsset(assetId, {
+              assignedTo: null,
+              assignedDate: null,
+              updatedAt: new Date().toISOString()
+            });
+            console.log(`✅ Asset ${assetId} unassigned successfully`);
+          } catch (error) {
+            console.error(`❌ Error unassigning asset ${assetId}:`, error);
+          }
+        }
+      }
+      
+      // Update the employee status with the pending change
+      setFormData(prev => ({
+        ...prev,
+        status: pendingStatusChange,
+        handoverDetails: handoverData
+      }));
+      
+      // Close handover modal and reset pending change
+      setShowHandoverModal(false);
+      setPendingStatusChange(null);
+      
+      console.log('✅ Handover details saved and assets unassigned');
+    } catch (error) {
+      console.error('❌ Error saving handover details:', error);
+      // Still close the modal even if asset unassignment fails
+      setShowHandoverModal(false);
+      setPendingStatusChange(null);
+    }
   };
 
   // Handle handover modal cancel

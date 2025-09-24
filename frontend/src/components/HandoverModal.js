@@ -196,8 +196,8 @@ const HandoverModal = ({ show, onHide, onSave, employee, employees = [], assets 
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto">
-        <div className="flex items-center justify-between p-6 border-b border-gray-200">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+        <div className="flex items-center justify-between p-4 border-b border-gray-200">
           <div>
             <h2 className="text-2xl font-bold text-gray-900">Employee Handover Details</h2>
             <p className="text-gray-600 mt-1">
@@ -214,10 +214,10 @@ const HandoverModal = ({ show, onHide, onSave, employee, employees = [], assets 
         </div>
         
         <form onSubmit={handleSubmit}>
-          <div className="p-6 space-y-6">
+          <div className="p-4 space-y-5">
             {/* Handover Date */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-700 mb-1">
                 Handover Date *
               </label>
               <input
@@ -236,7 +236,7 @@ const HandoverModal = ({ show, onHide, onSave, employee, employees = [], assets 
 
             {/* Handover To */}
             <div className="relative" data-dropdown="handover-to">
-              <label className="block text-sm font-medium text-gray-700 mb-2 mt-2">
+              <label className="block text-sm font-medium text-gray-700 mb-1 mt-2">
                 Handover To *
               </label>
               <div className="relative">
@@ -296,7 +296,7 @@ const HandoverModal = ({ show, onHide, onSave, employee, employees = [], assets 
 
             {/* Handover Reason */}
             <div className="relative" data-dropdown="reason">
-              <label className="block text-sm font-medium text-gray-700 mb-2 mt-2">
+              <label className="block text-sm font-medium text-gray-700 mb-1 mt-2">
                 Handover Reason *
               </label>
               <div className="relative">
@@ -434,7 +434,7 @@ const HandoverModal = ({ show, onHide, onSave, employee, employees = [], assets 
           </div>
 
           {/* Form Actions */}
-          <div className="flex items-center justify-end gap-4 p-6 pt-8 border-t border-gray-200">
+          <div className="flex items-center justify-end gap-4 p-4 pt-6 border-t border-gray-200">
             <button
               type="button"
               onClick={onHide}
