@@ -4,6 +4,7 @@ import { assetAPI } from '../services/api';
 
 const ViewEmployeeModal = ({ show, onHide, employee }) => {
   const [assignedAssets, setAssignedAssets] = useState([]);
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
 
   // Load assigned assets for this employee from API
   useEffect(() => {
@@ -32,7 +33,14 @@ const ViewEmployeeModal = ({ show, onHide, employee }) => {
     };
 
     loadAssignedAssets();
-  }, [show, employee, employee?.handoverDetails, employee?.updatedAt]);
+  }, [show, employee, employee?.handoverDetails, employee?.updatedAt, refreshTrigger]);
+
+  // Force refresh when modal is shown
+  useEffect(() => {
+    if (show) {
+      setRefreshTrigger(prev => prev + 1);
+    }
+  }, [show]);
 
   const handleBackdropClick = (e) => {
     // Only close if clicking on the backdrop, not the modal content
@@ -254,7 +262,18 @@ const ViewEmployeeModal = ({ show, onHide, employee }) => {
 
           {/* Assigned Assets Section */}
           <div>
-            <h6 className="text-gray-500 font-semibold mb-4">Assigned Assets ({assignedAssets.length})</h6>
+            <div className="flex items-center justify-between mb-4">
+              <h6 className="text-gray-500 font-semibold">Assigned Assets ({assignedAssets.length})</h6>
+              <button
+                type="button"
+                onClick={() => setRefreshTrigger(prev => prev + 1)}
+                className="px-3 py-1 text-xs bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition-colors duration-200 flex items-center gap-1"
+                title="Refresh assets"
+              >
+                <i className="fas fa-sync-alt"></i>
+                Refresh
+              </button>
+            </div>
             {assignedAssets.length === 0 ? (
               <div className="bg-gray-50 rounded-xl p-8 text-center">
                 <i className="fas fa-boxes text-4xl text-gray-300 mb-4"></i>
