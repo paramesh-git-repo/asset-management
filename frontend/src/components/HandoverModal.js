@@ -175,7 +175,12 @@ const HandoverModal = ({ show, onHide, onSave, employee, employees = [], assets 
   // Close dropdowns when clicking outside
   useEffect(() => {
     const handleClickOutside = (event) => {
-      if (!event.target.closest('.relative')) {
+      // Check if click is outside any dropdown
+      const isHandoverToDropdown = event.target.closest('[data-dropdown="handover-to"]');
+      const isReasonDropdown = event.target.closest('[data-dropdown="reason"]');
+      const isStatusDropdown = event.target.closest('[data-dropdown="status"]');
+      
+      if (!isHandoverToDropdown && !isReasonDropdown && !isStatusDropdown) {
         setShowHandoverToDropdown(false);
         setShowReasonDropdown(false);
         setShowStatusDropdown(false);
@@ -234,8 +239,8 @@ const HandoverModal = ({ show, onHide, onSave, employee, employees = [], assets 
             </div>
 
             {/* Handover To */}
-            <div className="relative">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+            <div className="relative" data-dropdown="handover-to">
+              <label className="block text-sm font-medium text-gray-700 mb-2 mt-2">
                 Handover To *
               </label>
               <div className="relative">
@@ -266,7 +271,6 @@ const HandoverModal = ({ show, onHide, onSave, employee, employees = [], assets 
               {showHandoverToDropdown && (
                 <div 
                   className="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto"
-                  onClick={(e) => e.stopPropagation()}
                   style={{ zIndex: 9999 }}
                 >
                   {filteredEmployees.length > 0 ? (
@@ -303,8 +307,8 @@ const HandoverModal = ({ show, onHide, onSave, employee, employees = [], assets 
             </div>
 
             {/* Handover Reason */}
-            <div className="relative">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+            <div className="relative" data-dropdown="reason">
+              <label className="block text-sm font-medium text-gray-700 mb-2 mt-2">
                 Handover Reason *
               </label>
               <div className="relative">
@@ -331,7 +335,6 @@ const HandoverModal = ({ show, onHide, onSave, employee, employees = [], assets 
               {showReasonDropdown && (
                 <div 
                   className="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg"
-                  onClick={(e) => e.stopPropagation()}
                   style={{ zIndex: 9999 }}
                 >
                   <ul>
@@ -358,7 +361,7 @@ const HandoverModal = ({ show, onHide, onSave, employee, employees = [], assets 
             {/* Assets to Return */}
             {employeeAssets.length > 0 && (
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-gray-700 mb-2 mt-2">
                   Assets to Return
                 </label>
                 <div className="border border-gray-300 rounded-xl p-4 max-h-48 overflow-y-auto">
@@ -394,8 +397,8 @@ const HandoverModal = ({ show, onHide, onSave, employee, employees = [], assets 
             )}
 
             {/* Handover Status */}
-            <div className="relative">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+            <div className="relative" data-dropdown="status">
+              <label className="block text-sm font-medium text-gray-700 mb-2 mt-2">
                 Handover Status
               </label>
               <div className="relative">
@@ -416,7 +419,6 @@ const HandoverModal = ({ show, onHide, onSave, employee, employees = [], assets 
               {showStatusDropdown && (
                 <div 
                   className="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg"
-                  onClick={(e) => e.stopPropagation()}
                   style={{ zIndex: 9999 }}
                 >
                   <ul>
@@ -439,7 +441,7 @@ const HandoverModal = ({ show, onHide, onSave, employee, employees = [], assets 
 
             {/* Notes */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-700 mb-2 mt-2">
                 Additional Notes
               </label>
               <textarea
@@ -454,7 +456,7 @@ const HandoverModal = ({ show, onHide, onSave, employee, employees = [], assets 
           </div>
 
           {/* Form Actions */}
-          <div className="flex items-center justify-end gap-4 p-6 border-t border-gray-200">
+          <div className="flex items-center justify-end gap-4 p-6 pt-8 border-t border-gray-200">
             <button
               type="button"
               onClick={onHide}

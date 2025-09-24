@@ -349,8 +349,8 @@ const Assets = () => {
         return { icon: 'fas fa-times-circle', color: 'text-red-600' };
       case 'Maintenance':
         return { icon: 'fas fa-wrench', color: 'text-yellow-600' };
-      case 'Retired':
-        return { icon: 'fas fa-ban', color: 'text-gray-600' };
+      case 'Repaired':
+        return { icon: 'fas fa-wrench', color: 'text-green-600' };
       default:
         return { icon: 'fas fa-circle', color: 'text-gray-600' };
     }
@@ -374,7 +374,7 @@ const Assets = () => {
     switch(status) {
       case 'Active': return 'bg-gradient-to-r from-green-100 to-green-200 text-green-800 border border-green-300 shadow-sm';
       case 'Maintenance': return 'bg-gradient-to-r from-yellow-100 to-yellow-200 text-yellow-800 border border-yellow-300 shadow-sm';
-      case 'Retired': return 'bg-gradient-to-r from-red-100 to-red-200 text-red-800 border border-red-300 shadow-sm';
+      case 'Repaired': return 'bg-gradient-to-r from-green-100 to-green-200 text-green-800 border border-green-300 shadow-sm';
       default: return 'bg-gradient-to-r from-gray-100 to-gray-200 text-gray-800 border border-gray-300 shadow-sm';
     }
   };
