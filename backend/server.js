@@ -47,6 +47,30 @@ if (process.env.NODE_ENV === 'development') {
 
 // Static files
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+// ✅ Root route for Elastic Beanstalk health
+app.get("/", (req, res) => {
+  res.status(200).json({
+    message: "✅ Backend running on Elastic Beanstalk",
+    uptime: process.uptime(),
+    timestamp: new Date().toISOString()
+  });
+});
+
+// API root endpoint
+app.get('/api', (req, res) => {
+  res.json({ 
+    message: "API root is working 🚀",
+    version: "1.0.0",
+    timestamp: new Date().toISOString(),
+    endpoints: {
+      auth: "/api/auth",
+      assets: "/api/assets", 
+      employees: "/api/employees",
+      dashboard: "/api/dashboard",
+      health: "/api/health"
+    }
+  });
+});
 
 // API root endpoint
 app.get('/api', (req, res) => {
