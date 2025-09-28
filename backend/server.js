@@ -6,10 +6,9 @@ const compression = require('compression');
 const path = require('path');
 require('dotenv').config({ path: './config.env' });
 
-// Import database connection
+// Database connection
 require('./db');
 
-// Import routes
 const assetRoutes = require('./routes/assetRoutes');
 const employeeRoutes = require('./routes/employeeRoutes');
 const authRoutes = require('./routes/authRoutes');
@@ -23,41 +22,41 @@ const PORT = process.env.PORT || 5002;
 app.use(helmet());
 app.use(compression());
 
-// CORS configuration
+// ✅ CORS setup
 app.use(cors({
   origin: [
-    "http://localhost:3000",  // Local dev frontend
-    "http://asset-management-react-paramesh.s3-website-us-east-1.amazonaws.com", // S3 hosting (http)
-    "https://asset-management-react-paramesh.s3-website-us-east-1.amazonaws.com", // S3 hosting (https if SSL added)
-    "https://d1yigrn7s04vaz.cloudfront.net" // CloudFront distribution URL
-    // Add "https://www.assetmanagementapp.com" here later when you map a Route53 domain
+    "http://localhost:3000",
+    "http://asset-management-react-paramesh.s3-website-us-east-1.amazonaws.com",
+    "https://asset-management-react-paramesh.s3-website-us-east-1.amazonaws.com",
+    "https://d1yigrn7s04vaz.cloudfront.net",
+    "https://d1yigrn7s04vaz.cloudfront.net"
+    // Add future custom domains here
   ],
   credentials: true,
-  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-  allowedHeaders: ["Content-Type", "Authorization"]
+  methods: ["GET","POST","PUT","DELETE","OPTIONS"],
+  allowedHeaders: ["Content-Type","Authorization"]
 }));
 
-// Body parsing middleware
+// Body parser
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 // Logging middleware
-if (process.env.NODE_ENV === 'development') {
+if (process.env.NODE_ENV !== 'test') {
   app.use(morgan('dev'));
 }
 
-// Static files
+// Static file serving
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
-// ✅ Root route for Elastic Beanstalk health
-app.get("/", (req, res) => {
-  res.status(200).json({
-    message: "✅ Backend running on Elastic Beanstalk",
-    uptime: process.uptime(),
-    timestamp: new Date().toISOString()
-  });
-});
 
-// API root endpoint
+// ✅ Root health route
+app.get("/", (req,res)=> res.json({ 
+  message: "✅ Backend running on Elastic Beanstalk",
+  uptime: process.uptime(),
+  timestamp: new Date().toISOString()
+}));
+
+// ✅ API index
 app.get('/api', (req, res) => {
   res.json({ 
     message: "API root is working 🚀",
@@ -65,7 +64,7 @@ app.get('/api', (req, res) => {
     timestamp: new Date().toISOString(),
     endpoints: {
       auth: "/api/auth",
-      assets: "/api/assets", 
+      assets: "/api/assets",
       employees: "/api/employees",
       dashboard: "/api/dashboard",
       health: "/api/health"
@@ -73,215 +72,34 @@ app.get('/api', (req, res) => {
   });
 });
 
-// API root endpoint
-app.get('/api', (req, res) => {
-  res.json({ 
-    message: "API root is working 🚀",
-    version: "1.0.0",
-    timestamp: new Date().toISOString(),
-    endpoints: {
-      auth: "/api/auth",
-      assets: "/api/assets", 
-      employees: "/api/employees",
-      dashboard: "/api/dashboard",
-      health: "/api/health"
-    }
-  });
-});
+// Health
+app.get('/api/health', (req, res)=> res.json({ status:"ok", timestamp: new Date(), uptime: process.uptime() }));
 
-// Health check endpoint
-app.get('/api/health', (req, res) => {
-  res.json({ 
-    status: 'ok', 
-    timestamp: new Date().toISOString(),
-    uptime: process.uptime()
-  });
-});
-
-// Database status endpoint
-app.get('/api/db-status', (req, res) => {
-  const mongoose = require('mongoose');
-  const connectionState = mongoose.connection.readyState;
-  const states = {
-    0: 'disconnected',
-    1: 'connected', 
-    2: 'connecting',
-    3: 'disconnecting'
-  };
-  
-  console.log('🔍 Database status check - State:', connectionState, states[connectionState]);
-  
-  res.json({
-    status: connectionState === 1 ? 'connected' : 'disconnected',
-    connectionState,
-    stateName: states[connectionState],
-    database: mongoose.connection.db ? mongoose.connection.db.databaseName : 'unknown',
-    host: mongoose.connection.host || 'unknown',
-    port: mongoose.connection.port || 'unknown',
-    timestamp: new Date().toISOString()
-  });
-});
-
-// Test endpoint to verify body parsing
-app.post('/api/test-body', (req, res) => {
-  console.log('🔍 Test body endpoint - Request body:', req.body);
-  console.log('🔍 Test body endpoint - Request headers:', req.headers);
-  res.json({
-    message: 'Body parsing test',
-    body: req.body,
-    headers: req.headers
-  });
-});
-
-// Test endpoint to verify database operations
-app.get('/api/test-db', async (req, res) => {
-  try {
-    const mongoose = require('mongoose');
-    console.log('🔍 Testing database connection...');
-    const connectionState = mongoose.connection.readyState;
-    console.log('🔍 Connection state:', connectionState);
-    if (connectionState !== 1) {
-      return res.status(500).json({ 
-        error: 'Database not connected', 
-        state: connectionState 
-      });
-    }
-    
-    const Asset = require('./models/Asset');
-    const count = await Asset.countDocuments();
-    console.log('✅ Database operation successful. Asset count:', count);
-    
-    res.json({ 
-      message: 'Database connection and operations working',
-      connectionState,
-      assetCount: count
-    });
-  } catch (error) {
-    console.error('❌ Database test failed:', error);
-    res.status(500).json({ 
-      error: 'Database test failed', 
-      message: error.message 
-    });
-  }
-});
-
-// Test endpoint specifically for employees
-app.get('/api/test-employees', async (req, res) => {
-  try {
-    const mongoose = require('mongoose');
-    console.log('🔍 Testing employee endpoint...');
-    const connectionState = mongoose.connection.readyState;
-    console.log('🔍 Connection state:', connectionState);
-    
-    if (connectionState !== 1) {
-      return res.status(500).json({ 
-        error: 'Database not connected', 
-        state: connectionState 
-      });
-    }
-    
-    const Employee = require('./models/Employee');
-    const employees = await Employee.find({}).limit(5);
-    const count = await Employee.countDocuments();
-    
-    console.log('✅ Employee test successful. Count:', count);
-    console.log('✅ Sample employees:', employees.map(e => ({ id: e._id, name: `${e.firstName} ${e.lastName}` })));
-    
-    res.json({ 
-      message: 'Employee endpoint working',
-      connectionState,
-      employeeCount: count,
-      sampleEmployees: employees.map(e => ({ id: e._id, name: `${e.firstName} ${e.lastName}`, email: e.email }))
-    });
-  } catch (error) {
-    console.error('❌ Employee test failed:', error);
-    res.status(500).json({ 
-      error: 'Employee test failed', 
-      message: error.message,
-      stack: error.stack
-    });
-  }
-});
-
-// Mount API routes
+// Mount routes
 app.use('/api/assets', assetRoutes);
 app.use('/api/employees', employeeRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/timeline', timelineRoutes);
 
-// Error handling middleware
-app.use((err, req, res, next) => {
-  console.error(err.stack);
-  res.status(500).json({
-    status: 'error',
-    message: 'Something went wrong!',
-    error: process.env.NODE_ENV === 'development' ? err.message : {}
-  });
-});
-
-// 404 handler
-app.use('*', (req, res) => {
-  res.status(404).json({
-    status: 'error',
-    message: 'Route not found'
-  });
-});
-
-// Error handling middleware (must be after all routes)
+// ✅ Error handler
 app.use((err, req, res, next) => {
   console.error('Error:', err.message);
-  console.error('Stack:', err.stack);
-  
-  // Don't leak error details in production
-  const isDevelopment = process.env.NODE_ENV === 'development';
-  
-  res.status(err.status || 500).json({ 
-    status: 'error', 
-    message: err.message || 'Something went wrong!',
-    ...(isDevelopment && { stack: err.stack })
-  });
-});
-
-// 404 handler
-app.use('*', (req, res) => {
-  res.status(404).json({
+  res.status(err.status || 500).json({
     status: 'error',
-    message: 'Route not found',
-    path: req.originalUrl
+    message: (process.env.NODE_ENV === 'development') ? err.message : 'Something went wrong!'
   });
 });
 
-// Start server
-app.listen(PORT, "0.0.0.0", () => {
+// ✅ 404 handler
+app.use('*', (req, res)=> {
+  res.status(404).json({ status:"error", message:"Route not found", path:req.originalUrl });
+});
+
+// Start
+app.listen(PORT, "0.0.0.0", ()=>{
   console.log(`🚀 Server running on port ${PORT}`);
   console.log(`📊 Environment: ${process.env.NODE_ENV}`);
-  console.log(`🔗 API URL: http://localhost:${PORT}/api`);
-});
-
-// Graceful shutdown
-process.on('SIGINT', async () => {
-  const mongoose = require('mongoose');
-  try {
-    await mongoose.connection.close();
-    console.log('MongoDB connection closed through app termination');
-    process.exit(0);
-  } catch (error) {
-    console.error('Error closing MongoDB connection:', error);
-    process.exit(1);
-  }
-});
-
-process.on('SIGTERM', async () => {
-  const mongoose = require('mongoose');
-  try {
-    await mongoose.connection.close();
-    console.log('MongoDB connection closed through app termination');
-    process.exit(0);
-  } catch (error) {
-    console.error('Error closing MongoDB connection:', error);
-    process.exit(1);
-  }
 });
 
 module.exports = app;
