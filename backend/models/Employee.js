@@ -144,11 +144,12 @@ const employeeSchema = new mongoose.Schema({
     },
     handoverTo: {
       type: String,
-      trim: true
+      trim: true,
+      default: null
     },
     handoverReason: {
       type: String,
-      enum: ['Resignation', 'Termination', 'Retirement', 'Transfer', 'Other'],
+      enum: ['Resignation', 'Termination', 'Retirement', 'Transfer', 'Other', null],
       default: null
     },
     assetsToReturn: [{
@@ -162,7 +163,8 @@ const employeeSchema = new mongoose.Schema({
     notes: {
       type: String,
       trim: true,
-      maxlength: [1000, 'Handover notes cannot exceed 1000 characters']
+      maxlength: [1000, 'Handover notes cannot exceed 1000 characters'],
+      default: null
     },
     completedAt: {
       type: Date,

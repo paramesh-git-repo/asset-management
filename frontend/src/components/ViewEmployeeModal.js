@@ -4,35 +4,67 @@ import { assetAPI } from '../services/api';
 
 const ViewEmployeeModal = ({ show, onHide, employee }) => {
   const [assignedAssets, setAssignedAssets] = useState([]);
+  const [allAssets, setAllAssets] = useState([]);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
 
-  // Load assigned assets for this employee from API
+  // Load assigned assets and all assets for this employee from API
   useEffect(() => {
-    const loadAssignedAssets = async () => {
+    const loadAssets = async () => {
       if (show && employee) {
         try {
-          console.log('🔍 ViewEmployeeModal: Loading assigned assets for employee:', employee.firstName, employee.lastName);
+          console.log('🔍 ViewEmployeeModal: Loading assets for employee:', employee.firstName, employee.lastName);
           const result = await assetAPI.getAll();
           
           if (result && result.status === 'success') {
             const assets = result.data;
+            setAllAssets(assets); // Store all assets for finding returned assets
+            
+            const employeeName = `${employee.firstName} ${employee.lastName}`.trim();
+            console.log('🔍 ViewEmployeeModal: Looking for employee name:', `"${employeeName}"`);
+            
+            // Quick debug: Show exactly what's in assignedTo fields
+            console.log("Debug assignedTo fields:", assets.map(a => a.assignedTo));
+            console.log("Looking for:", employeeName);
+            
+            // Debug: Show all assets with their assignedTo values
+            console.log('🔍 ViewEmployeeModal: All assets with assignedTo:', assets.map(asset => ({
+              name: asset.name,
+              assignedTo: `"${asset.assignedTo}"`,
+              status: asset.status,
+              matches: asset.assignedTo === employeeName
+            })));
+            
+            // Debug: Show only assets that have assignedTo values
+            const assetsWithAssignedTo = assets.filter(asset => asset.assignedTo && asset.assignedTo !== null);
+            console.log('🔍 ViewEmployeeModal: Assets with assignedTo values:', assetsWithAssignedTo.map(asset => ({
+              name: asset.name,
+              assignedTo: `"${asset.assignedTo}"`,
+              status: asset.status
+            })));
+            
             const employeeAssets = assets.filter(asset => 
-              asset.assignedTo === (employee.fullName || `${employee.firstName} ${employee.lastName}`)
+              asset.assignedTo === employeeName && 
+              asset.assignedTo !== null && 
+              asset.assignedTo !== '' &&
+              asset.assignedTo !== undefined
             );
             console.log('🔍 ViewEmployeeModal: Found assigned assets:', employeeAssets.length);
+            console.log('🔍 ViewEmployeeModal: All assets count:', assets.length);
             setAssignedAssets(employeeAssets);
           } else {
-            console.error('Error loading assigned assets:', result?.message || 'Unknown error');
+            console.error('Error loading assets:', result?.message || 'Unknown error');
             setAssignedAssets([]);
+            setAllAssets([]);
           }
         } catch (error) {
-          console.error('Error loading assigned assets:', error);
+          console.error('Error loading assets:', error);
           setAssignedAssets([]);
+          setAllAssets([]);
         }
       }
     };
 
-    loadAssignedAssets();
+    loadAssets();
   }, [show, employee, employee?.handoverDetails, employee?.updatedAt, refreshTrigger]);
 
   // Force refresh when modal is shown
@@ -157,26 +189,27 @@ const ViewEmployeeModal = ({ show, onHide, employee }) => {
                           (employee.handoverDetails.assetsToReturn && employee.handoverDetails.assetsToReturn.length > 0) ||
                           employee.handoverDetails.notes
                         ) ? (
-                          <div className="bg-blue-50 rounded-xl p-4 border border-blue-200">
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div className="bg-blue-50 rounded-xl p-6 border border-blue-200">
+                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                              {/* Handover Information */}
                               <div>
-                                <h6 className="text-sm font-semibold text-blue-800 mb-2">Handover Information</h6>
-                                <div className="space-y-2">
-                                  <div className="flex justify-between">
-                                    <span className="text-sm text-blue-700 font-medium">Date:</span>
+                                <h6 className="text-lg font-semibold text-blue-900 mb-4">Handover Information</h6>
+                                <div className="space-y-3">
+                                  <div className="flex justify-between items-center">
+                                    <span className="text-sm font-medium text-blue-700">Date:</span>
                                     <span className="text-sm text-blue-900">{formatDate(employee.handoverDetails.handoverDate)}</span>
                                   </div>
-                                  <div className="flex justify-between">
-                                    <span className="text-sm text-blue-700 font-medium">To:</span>
+                                  <div className="flex justify-between items-center">
+                                    <span className="text-sm font-medium text-blue-700">To:</span>
                                     <span className="text-sm text-blue-900">{employee.handoverDetails.handoverTo}</span>
                                   </div>
-                                  <div className="flex justify-between">
-                                    <span className="text-sm text-blue-700 font-medium">Reason:</span>
+                                  <div className="flex justify-between items-center">
+                                    <span className="text-sm font-medium text-blue-700">Reason:</span>
                                     <span className="text-sm text-blue-900">{employee.handoverDetails.handoverReason}</span>
                                   </div>
-                                  <div className="flex justify-between">
-                                    <span className="text-sm text-blue-700 font-medium">Status:</span>
-                                    <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
+                                  <div className="flex justify-between items-center">
+                                    <span className="text-sm font-medium text-blue-700">Status:</span>
+                                    <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
                                       employee.handoverDetails.handoverStatus === 'Completed' ? 'bg-green-100 text-green-800' :
                                       employee.handoverDetails.handoverStatus === 'In Progress' ? 'bg-yellow-100 text-yellow-800' :
                                       employee.handoverDetails.handoverStatus === 'Partial' ? 'bg-orange-100 text-orange-800' :
@@ -188,27 +221,30 @@ const ViewEmployeeModal = ({ show, onHide, employee }) => {
                                 </div>
                               </div>
                               
+                              {/* Returned Assets */}
                               <div>
-                                <h6 className="text-sm font-semibold text-blue-800 mb-2">Assets to Return</h6>
+                                <h6 className="text-lg font-semibold text-blue-900 mb-4">Returned Assets</h6>
                                 {employee.handoverDetails.assetsToReturn && employee.handoverDetails.assetsToReturn.length > 0 ? (
-                                  <div className="space-y-1">
+                                  <div className="space-y-2">
                                     {employee.handoverDetails.assetsToReturn.map((assetId, index) => {
-                                      const asset = assignedAssets.find(a => a.id === assetId);
+                                      const asset = allAssets.find(a => a.id === assetId);
                                       return (
-                                        <div key={index} className="flex items-center justify-between bg-white rounded-lg p-2 border border-blue-200">
-                                          <div>
-                                            <span className="text-sm font-medium text-blue-900">
-                                              {asset ? asset.name : `Asset ID: ${assetId}`}
+                                        <div key={index} className="bg-white rounded-lg p-3 border border-blue-200">
+                                          <div className="flex items-center justify-between">
+                                            <div>
+                                              <span className="text-sm font-medium text-blue-900">
+                                                {asset ? asset.name : `Asset ID: ${assetId}`}
+                                              </span>
+                                              {asset && (
+                                                <span className="text-xs text-blue-600 ml-2">({asset.assetId})</span>
+                                              )}
+                                            </div>
+                                            <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
+                                              asset && asset.status === 'Active' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
+                                            }`}>
+                                              {asset ? asset.status : 'Unknown'}
                                             </span>
-                                            {asset && (
-                                              <span className="text-xs text-blue-600 ml-2">({asset.assetId})</span>
-                                            )}
                                           </div>
-                                          <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
-                                            asset && asset.status === 'Active' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
-                                          }`}>
-                                            {asset ? asset.status : 'Unknown'}
-                                          </span>
                                         </div>
                                       );
                                     })}
@@ -220,16 +256,16 @@ const ViewEmployeeModal = ({ show, onHide, employee }) => {
                             </div>
                             
                             {employee.handoverDetails.notes && (
-                              <div className="mt-3 pt-3 border-t border-blue-200">
-                                <h6 className="text-sm font-semibold text-blue-800 mb-1">Notes</h6>
-                                <p className="text-sm text-blue-900 bg-white rounded-lg p-2 border border-blue-200">
+                              <div className="mt-4 pt-4 border-t border-blue-200">
+                                <h6 className="text-sm font-semibold text-blue-800 mb-2">Notes</h6>
+                                <p className="text-sm text-blue-900 bg-white rounded-lg p-3 border border-blue-200">
                                   {employee.handoverDetails.notes}
                                 </p>
                               </div>
                             )}
                             
                             {employee.handoverDetails.completedAt && (
-                              <div className="mt-3 pt-3 border-t border-blue-200">
+                              <div className="mt-4 pt-4 border-t border-blue-200">
                                 <div className="flex justify-between items-center">
                                   <span className="text-sm font-semibold text-blue-800">Completed:</span>
                                   <span className="text-sm text-blue-900">{formatDate(employee.handoverDetails.completedAt)}</span>

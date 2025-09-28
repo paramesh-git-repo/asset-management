@@ -264,7 +264,19 @@ router.put('/:id', authenticateToken, requirePermission('edit_employees'), uploa
       });
     }
     
-    const employee = await Employee.findById(req.params.id);
+    // Try to find employee by MongoDB _id first, then by employeeId field
+    let employee = await Employee.findById(req.params.id);
+    if (!employee) {
+      // If not found by _id, try to find by employeeId field
+      console.log('🔍 Employee not found by _id, trying employeeId field:', req.params.id);
+      employee = await Employee.findOne({ employeeId: req.params.id });
+      if (employee) {
+        console.log('✅ Employee found by employeeId field:', employee.employeeId);
+      }
+    } else {
+      console.log('✅ Employee found by _id:', employee.employeeId);
+    }
+    
     if (!employee) {
       return res.status(404).json({
         status: 'error',
@@ -304,6 +316,44 @@ router.put('/:id', authenticateToken, requirePermission('edit_employees'), uploa
         }
       }
       req.body.profileImage = `/uploads/employees/${req.file.filename}`;
+    }
+    
+    // Handle asset handover if handover details are provided
+    if (req.body.handoverDetails && req.body.handoverDetails.assetsToReturn && req.body.handoverDetails.assetsToReturn.length > 0) {
+      console.log('🔄 Processing asset handover for employee:', req.params.id);
+      console.log('📦 Assets to return:', req.body.handoverDetails.assetsToReturn);
+      
+      // Unassign assets marked for handover
+      for (const assetId of req.body.handoverDetails.assetsToReturn) {
+        try {
+          // Try to find asset by MongoDB _id first, then by assetId field
+          let asset = await Asset.findById(assetId);
+          if (!asset) {
+            // If not found by _id, try to find by assetId field
+            asset = await Asset.findOne({ assetId: assetId });
+          }
+          
+          if (asset) {
+            // Unassign the asset from the employee
+            asset.assignedTo = null;
+            asset.assignedDate = null;
+            asset.updatedAt = new Date();
+            
+            // Optionally update asset status to reflect handover
+            // You can change this logic based on your business requirements
+            if (asset.status === 'Active') {
+              asset.status = 'Available'; // or 'Returned' depending on your needs
+            }
+            
+            await asset.save();
+            console.log(`✅ Unassigned asset ${asset.assetId || assetId} from employee ${req.params.id}`);
+          } else {
+            console.log(`⚠️ Asset ${assetId} not found`);
+          }
+        } catch (assetError) {
+          console.error(`❌ Error unassigning asset ${assetId}:`, assetError.message);
+        }
+      }
     }
     
     const updatedEmployee = await Employee.findByIdAndUpdate(

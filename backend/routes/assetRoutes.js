@@ -41,13 +41,23 @@ const upload = multer({
   }
 });
 
-// Validation matching the required schema fields
-const validateAsset = [
+// Validation for creating new assets
+const validateAssetCreate = [
   body('assetId').notEmpty().withMessage('Asset ID is required'),
   body('location').notEmpty().withMessage('Location is required'),
   body('name').optional().trim().isLength({ max: 100 }).withMessage('Name must be less than 100 characters if provided'),
   body('category').optional().isIn(['Electronics', 'Furniture', 'Vehicles', 'Machinery', 'Software', 'Other', 'IT Equipment', 'Office Furniture']).withMessage('Invalid category if provided'),
-  body('status').optional().isIn(['Active', 'Inactive', 'Maintenance', 'Retired', 'Lost']).withMessage('Invalid status if provided'),
+  body('status').optional().isIn(['Active', 'Inactive', 'Maintenance', 'Retired', 'Lost', 'Available', 'Repaired']).withMessage('Invalid status if provided'),
+  // Accept ANY other fields without validation
+];
+
+// Validation for updating assets (more lenient)
+const validateAssetUpdate = [
+  body('assetId').optional().notEmpty().withMessage('Asset ID cannot be empty if provided'),
+  body('location').optional().notEmpty().withMessage('Location cannot be empty if provided'),
+  body('name').optional().trim().isLength({ max: 100 }).withMessage('Name must be less than 100 characters if provided'),
+  body('category').optional().isIn(['Electronics', 'Furniture', 'Vehicles', 'Machinery', 'Software', 'Other', 'IT Equipment', 'Office Furniture']).withMessage('Invalid category if provided'),
+  body('status').optional().isIn(['Active', 'Inactive', 'Maintenance', 'Retired', 'Lost', 'Available', 'Repaired']).withMessage('Invalid status if provided'),
   // Accept ANY other fields without validation
 ];
 
@@ -153,7 +163,7 @@ router.get('/:id', authenticateToken, requirePermission('view_assets'), async (r
 });
 
 // POST create new asset
-router.post('/', authenticateToken, requirePermission('create_assets'), upload.single('image'), validateAsset, async (req, res) => {
+router.post('/', authenticateToken, requirePermission('create_assets'), upload.single('image'), validateAssetCreate, async (req, res) => {
   try {
     console.log('🔍 POST /assets - Request body:', JSON.stringify(req.body, null, 2));
     console.log('🔍 Request headers:', req.headers);
@@ -243,10 +253,14 @@ router.post('/', authenticateToken, requirePermission('create_assets'), upload.s
 });
 
 // PUT update asset
-router.put('/:id', authenticateToken, requirePermission('edit_assets'), upload.single('image'), validateAsset, async (req, res) => {
+router.put('/:id', authenticateToken, requirePermission('edit_assets'), upload.single('image'), validateAssetUpdate, async (req, res) => {
   try {
+    console.log('🔍 PUT /assets/:id - Request body:', JSON.stringify(req.body, null, 2));
+    console.log('🔍 PUT /assets/:id - Asset ID:', req.params.id);
+    
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
+      console.log('❌ Validation errors:', errors.array());
       return res.status(400).json({
         status: 'error',
         message: 'Validation failed',
@@ -254,7 +268,19 @@ router.put('/:id', authenticateToken, requirePermission('edit_assets'), upload.s
       });
     }
     
-    const asset = await Asset.findById(req.params.id);
+    // Try to find asset by MongoDB _id first, then by assetId field
+    let asset = await Asset.findById(req.params.id);
+    if (!asset) {
+      // If not found by _id, try to find by assetId field
+      console.log('🔍 Asset not found by _id, trying assetId field:', req.params.id);
+      asset = await Asset.findOne({ assetId: req.params.id });
+      if (asset) {
+        console.log('✅ Asset found by assetId field:', asset.assetId);
+      }
+    } else {
+      console.log('✅ Asset found by _id:', asset.assetId);
+    }
+    
     if (!asset) {
       return res.status(404).json({
         status: 'error',

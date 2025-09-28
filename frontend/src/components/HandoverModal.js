@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 
 const HandoverModal = ({ show, onHide, onSave, employee, employees = [], assets = [] }) => {
+  console.log('🔄 HandoverModal: Component loaded with radio buttons version');
   const [formData, setFormData] = useState({
     handoverDate: '',
     handoverTo: '',
@@ -11,6 +12,7 @@ const HandoverModal = ({ show, onHide, onSave, employee, employees = [], assets 
   });
   const [errors, setErrors] = useState({});
   const [selectedAssets, setSelectedAssets] = useState([]);
+  const [selectedStatus, setSelectedStatus] = useState(''); // New state for status radio buttons
   
   // Dropdown states
   const [showHandoverToDropdown, setShowHandoverToDropdown] = useState(false);
@@ -30,6 +32,7 @@ const HandoverModal = ({ show, onHide, onSave, employee, employees = [], assets 
         handoverStatus: 'Pending'
       });
       setSelectedAssets([]);
+      setSelectedStatus(''); // Reset status selection
       setErrors({});
       setShowHandoverToDropdown(false);
       setShowReasonDropdown(false);
@@ -131,19 +134,34 @@ const HandoverModal = ({ show, onHide, onSave, employee, employees = [], assets 
     setShowStatusDropdown(false);
   };
 
+  // Handle status radio button selection
+  const handleStatusRadioChange = (status) => {
+    setSelectedStatus(status);
+    // Clear any status-related errors when user selects
+    if (errors.status) {
+      setErrors(prev => ({
+        ...prev,
+        status: ''
+      }));
+    }
+  };
+
   const validateForm = () => {
     const newErrors = {};
 
-    if (!formData.handoverDate.trim()) {
-      newErrors.handoverDate = 'Handover date is required';
-    }
+    // Only validate handover details if status is Relieved or Terminated
+    if (selectedStatus === 'Relieved' || selectedStatus === 'Terminated') {
+      if (!formData.handoverDate.trim()) {
+        newErrors.handoverDate = 'Handover date is required';
+      }
 
-    if (!formData.handoverTo.trim()) {
-      newErrors.handoverTo = 'Handover to is required';
-    }
+      if (!formData.handoverTo.trim()) {
+        newErrors.handoverTo = 'Handover to is required';
+      }
 
-    if (!formData.handoverReason.trim()) {
-      newErrors.handoverReason = 'Handover reason is required';
+      if (!formData.handoverReason.trim()) {
+        newErrors.handoverReason = 'Handover reason is required';
+      }
     }
 
     setErrors(newErrors);
@@ -159,7 +177,8 @@ const HandoverModal = ({ show, onHide, onSave, employee, employees = [], assets 
         assetsToReturn: selectedAssets,
         employeeId: employee.id,
         employeeName: employee.name || `${employee.firstName} ${employee.lastName}`,
-        handoverDate: new Date(formData.handoverDate).toISOString()
+        handoverDate: new Date(formData.handoverDate).toISOString(),
+        selectedStatus: selectedStatus // Include the selected status
       };
       
       onSave(handoverData);
@@ -194,6 +213,8 @@ const HandoverModal = ({ show, onHide, onSave, employee, employees = [], assets 
 
   if (!show) return null;
 
+  console.log('🔄 HandoverModal: Modal is showing, selectedStatus:', selectedStatus);
+
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
@@ -215,7 +236,54 @@ const HandoverModal = ({ show, onHide, onSave, employee, employees = [], assets 
         
         <form onSubmit={handleSubmit}>
           <div className="p-4 space-y-5">
-            {/* Handover Date */}
+            {/* Employee Status Selection */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-3">
+                Select Employee Status *
+              </label>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="flex items-center">
+                  <input
+                    type="radio"
+                    id="status-relieved"
+                    name="employeeStatus"
+                    value="Relieved"
+                    checked={selectedStatus === 'Relieved'}
+                    onChange={(e) => handleStatusRadioChange(e.target.value)}
+                    className="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500"
+                  />
+                  <label htmlFor="status-relieved" className="ml-3 flex items-center gap-2">
+                    <i className="fas fa-sign-out-alt text-red-600"></i>
+                    <span className="text-sm font-medium text-gray-900">Relieved</span>
+                  </label>
+                </div>
+                <div className="flex items-center">
+                  <input
+                    type="radio"
+                    id="status-terminated"
+                    name="employeeStatus"
+                    value="Terminated"
+                    checked={selectedStatus === 'Terminated'}
+                    onChange={(e) => handleStatusRadioChange(e.target.value)}
+                    className="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500"
+                  />
+                  <label htmlFor="status-terminated" className="ml-3 flex items-center gap-2">
+                    <i className="fas fa-user-times text-red-600"></i>
+                    <span className="text-sm font-medium text-gray-900">Terminated</span>
+                  </label>
+                </div>
+              </div>
+            </div>
+
+            {/* Handover Details Section - Only show when Relieved or Terminated is selected */}
+            {(selectedStatus === 'Relieved' || selectedStatus === 'Terminated') && (
+              <div className="border-t border-gray-200 pt-5">
+                <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                  <i className="fas fa-handshake text-blue-600"></i>
+                  Handover Details
+                </h3>
+                
+                {/* Handover Date */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Handover Date *
@@ -340,11 +408,11 @@ const HandoverModal = ({ show, onHide, onSave, employee, employees = [], assets 
               )}
             </div>
 
-            {/* Assets to Return */}
+            {/* Returned Assets */}
             {employeeAssets.length > 0 && (
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2 mt-2">
-                  Assets to Return
+                  Returned Assets
                 </label>
                 <div className="border border-gray-300 rounded-xl p-4 max-h-48 overflow-y-auto">
                   {employeeAssets.map(asset => (
@@ -373,7 +441,7 @@ const HandoverModal = ({ show, onHide, onSave, employee, employees = [], assets 
                   ))}
                 </div>
                 <p className="text-sm text-gray-500 mt-2">
-                  Select assets that need to be returned during handover
+                  Select assets that have been returned during handover
                 </p>
               </div>
             )}
@@ -417,20 +485,22 @@ const HandoverModal = ({ show, onHide, onSave, employee, employees = [], assets 
               )}
             </div>
 
-            {/* Notes */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2 mt-2">
-                Additional Notes
-              </label>
-              <textarea
-                name="notes"
-                value={formData.notes}
-                onChange={handleInputChange}
-                rows={4}
-                className="w-full rounded-xl border border-gray-300 px-4 py-3 transition-all duration-300 text-gray-900 bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/50"
-                placeholder="Enter any additional handover details, special instructions, or notes..."
-              />
-            </div>
+                {/* Notes */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2 mt-2">
+                    Additional Notes
+                  </label>
+                  <textarea
+                    name="notes"
+                    value={formData.notes}
+                    onChange={handleInputChange}
+                    rows={4}
+                    className="w-full rounded-xl border border-gray-300 px-4 py-3 transition-all duration-300 text-gray-900 bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/50"
+                    placeholder="Enter any additional handover details, special instructions, or notes..."
+                  />
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Form Actions */}

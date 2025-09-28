@@ -183,7 +183,7 @@ const AssetPageSettingsModal = ({ show, onHide }) => {
     ];
 
     // Default statuses
-    const defaultStatuses = ['Active', 'Inactive', 'Maintenance', 'Retired'];
+    const defaultStatuses = ['Active', 'Inactive', 'Maintenance', 'Repaired', 'Available', 'Lost'];
 
     // Filter out removed default categories and statuses
     const filteredDefaultCategories = defaultCategories.filter(cat => 

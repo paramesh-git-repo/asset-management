@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { config } from '../config/config';
 import { assetAPI } from '../services/api';
 import dataService from '../services/dataService';
-import HandoverModal from './HandoverModal';
 
 const EmployeeModal = ({ show, onHide, onSave, employee, employees = [], departments, roles, categories = [], statuses = [], validationErrors = {} }) => {
   const [formData, setFormData] = useState({
@@ -48,9 +47,18 @@ const EmployeeModal = ({ show, onHide, onSave, employee, employees = [], departm
   const [showPositionDropdown, setShowPositionDropdown] = useState(false);
   const [showEmployeeStatusDropdown, setShowEmployeeStatusDropdown] = useState(false);
   
-  // Handover modal state
-  const [showHandoverModal, setShowHandoverModal] = useState(false);
-  const [pendingStatusChange, setPendingStatusChange] = useState(null);
+  // Handover states (integrated into main modal)
+  const [handoverData, setHandoverData] = useState({
+    handoverDate: '',
+    handoverTo: '',
+    handoverReason: '',
+    assetsToReturn: [],
+    notes: '',
+    handoverStatus: 'Pending'
+  });
+  const [selectedHandoverAssets, setSelectedHandoverAssets] = useState([]);
+  const [showHandoverToDropdown, setShowHandoverToDropdown] = useState(false);
+  const [showHandoverReasonDropdown, setShowHandoverReasonDropdown] = useState(false);
   
   
   // Handle category selection from custom dropdown
@@ -108,20 +116,11 @@ const EmployeeModal = ({ show, onHide, onSave, employee, employees = [], departm
   
   // Handle employee status selection from custom dropdown
   const handleEmployeeStatusSelect = (statusValue) => {
-    // Check if changing to a status that requires handover
-    if ((statusValue === 'Relieved' || statusValue === 'Terminated') && 
-        employee && 
-        employee.status !== statusValue) {
-      // Store the pending status change and show handover modal
-      setPendingStatusChange(statusValue);
-      setShowHandoverModal(true);
-    } else {
-      // Direct status change for other statuses
-      setFormData(prev => ({
-        ...prev,
-        status: statusValue
-      }));
-    }
+    // Direct status change for all statuses
+    setFormData(prev => ({
+      ...prev,
+      status: statusValue
+    }));
     setShowEmployeeStatusDropdown(false);
     
     // Clear error when user selects
@@ -133,53 +132,59 @@ const EmployeeModal = ({ show, onHide, onSave, employee, employees = [], departm
     }
   };
 
-  // Handle handover modal save
-  const handleHandoverSave = async (handoverData) => {
-    try {
-      // Unassign selected assets from the employee
-      if (handoverData.assetsToReturn && handoverData.assetsToReturn.length > 0) {
-        console.log('🔍 Unassigning assets:', handoverData.assetsToReturn);
-        
-        // Update each asset to remove assignment
-        for (const assetId of handoverData.assetsToReturn) {
-          try {
-            await dataService.updateAsset(assetId, {
-              assignedTo: null,
-              assignedDate: null,
-              updatedAt: new Date().toISOString()
-            });
-            console.log(`✅ Asset ${assetId} unassigned successfully`);
-          } catch (error) {
-            console.error(`❌ Error unassigning asset ${assetId}:`, error);
-          }
-        }
-      }
-      
-      // Update the employee status with the pending change
-      setFormData(prev => ({
-        ...prev,
-        status: pendingStatusChange,
-        handoverDetails: handoverData,
-        updatedAt: new Date().toISOString()
-      }));
-      
-      // Close handover modal and reset pending change
-      setShowHandoverModal(false);
-      setPendingStatusChange(null);
-      
-      console.log('✅ Handover details saved and assets unassigned');
-    } catch (error) {
-      console.error('❌ Error saving handover details:', error);
-      // Still close the modal even if asset unassignment fails
-      setShowHandoverModal(false);
-      setPendingStatusChange(null);
+  // Handle handover input changes
+  const handleHandoverInputChange = (e) => {
+    const { name, value } = e.target;
+    setHandoverData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  // Handle handover asset selection
+  const handleHandoverAssetSelection = (assetId, isSelected) => {
+    console.log('🔍 EmployeeModal: handleHandoverAssetSelection called:', {
+      assetId,
+      assetIdType: typeof assetId,
+      isSelected,
+      currentSelectedHandoverAssets: selectedHandoverAssets
+    });
+    
+    if (isSelected) {
+      setSelectedHandoverAssets(prev => {
+        const newSelection = [...prev, assetId];
+        console.log('🔍 EmployeeModal: Asset selected for handover:', {
+          assetId,
+          previousSelection: prev,
+          newSelection,
+          totalSelected: newSelection.length
+        });
+        return newSelection;
+      });
+    } else {
+      setSelectedHandoverAssets(prev => {
+        const newSelection = prev.filter(id => id !== assetId);
+        console.log('🔍 EmployeeModal: Asset deselected from handover:', {
+          assetId,
+          previousSelection: prev,
+          newSelection,
+          totalSelected: newSelection.length
+        });
+        return newSelection;
+      });
     }
   };
 
-  // Handle handover modal cancel
-  const handleHandoverCancel = () => {
-    setShowHandoverModal(false);
-    setPendingStatusChange(null);
+  // Handle handover to selection
+  const handleHandoverToSelect = (employeeName) => {
+    setHandoverData(prev => ({ ...prev, handoverTo: employeeName }));
+    setShowHandoverToDropdown(false);
+  };
+
+  // Handle handover reason selection
+  const handleHandoverReasonSelect = (reason) => {
+    setHandoverData(prev => ({ ...prev, handoverReason: reason }));
+    setShowHandoverReasonDropdown(false);
   };
 
   // Convert DD/MM/YYYY to YYYY-MM-DD for backend
@@ -395,18 +400,22 @@ const EmployeeModal = ({ show, onHide, onSave, employee, employees = [], departm
     const loadAssets = async () => {
       if (show) {
         try {
+          console.log('🔍 EmployeeModal: Loading available assets...');
           const result = await assetAPI.getAll();
+          console.log('🔍 EmployeeModal: Asset API result:', result);
           
           if (result.status === 'success') {
             const assets = result.data;
-            const unassignedAssets = assets.filter(asset => !asset.assignedTo || asset.assignedTo === '');
+            console.log('🔍 EmployeeModal: All assets:', assets);
+            const unassignedAssets = assets.filter(asset => !asset.assignedTo || asset.assignedTo === '' || asset.assignedTo === null);
+            console.log('🔍 EmployeeModal: Unassigned assets:', unassignedAssets);
             setAvailableAssets(unassignedAssets);
           } else {
-            console.error('Error loading assets:', result.message);
+            console.error('❌ EmployeeModal: Error loading assets:', result.message);
             setAvailableAssets([]);
           }
         } catch (error) {
-          console.error('Error loading assets:', error);
+          console.error('❌ EmployeeModal: Error loading assets:', error);
           setAvailableAssets([]);
         }
       }
@@ -436,13 +445,63 @@ const EmployeeModal = ({ show, onHide, onSave, employee, employees = [], departm
             notes: employee.notes || ''
           });
           
+          // Initialize handover data if employee has existing handover details
+          if (employee.handoverDetails) {
+            setHandoverData({
+              handoverDate: employee.handoverDetails.handoverDate ? new Date(employee.handoverDetails.handoverDate).toISOString().split('T')[0] : '',
+              handoverTo: employee.handoverDetails.handoverTo || '',
+              handoverReason: employee.handoverDetails.handoverReason || '',
+              assetsToReturn: employee.handoverDetails.assetsToReturn || [],
+              notes: employee.handoverDetails.notes || '',
+              handoverStatus: employee.handoverDetails.handoverStatus || 'Pending'
+            });
+            
+            // Initialize selected handover assets
+            if (employee.handoverDetails.assetsToReturn && employee.handoverDetails.assetsToReturn.length > 0) {
+              // Convert MongoDB ObjectIds to assetIds for proper filtering
+              const result = await assetAPI.getAll();
+              if (result.status === 'success') {
+                const allAssets = result.data;
+                const handoverAssetIds = employee.handoverDetails.assetsToReturn.map(mongoId => {
+                  const asset = allAssets.find(a => a.id === mongoId);
+                  return asset ? asset.assetId : mongoId; // Fallback to mongoId if not found
+                });
+                setSelectedHandoverAssets(handoverAssetIds);
+                console.log('🔍 EmployeeModal: Initialized handover assets:', {
+                  originalAssetsToReturn: employee.handoverDetails.assetsToReturn,
+                  convertedAssetIds: handoverAssetIds,
+                  assetsToReturnLength: handoverAssetIds.length
+                });
+              } else {
+                // Fallback: use original values
+                setSelectedHandoverAssets(employee.handoverDetails.assetsToReturn);
+              }
+            }
+          } else {
+            // Reset handover data if employee doesn't have handover details
+            setHandoverData({
+              handoverDate: '',
+              handoverTo: '',
+              handoverReason: '',
+              assetsToReturn: [],
+              notes: '',
+              handoverStatus: 'Pending'
+            });
+            setSelectedHandoverAssets([]);
+          }
+          
           // Load assigned assets for this employee from API
           try {
             const result = await assetAPI.getAll();
             
             if (result.status === 'success') {
               const assets = result.data;
-              const employeeAssets = assets.filter(asset => asset.assignedTo === `${employee.firstName} ${employee.lastName}`.trim());
+              const employeeAssets = assets.filter(asset => 
+                asset.assignedTo === `${employee.firstName} ${employee.lastName}`.trim() && 
+                asset.assignedTo !== null && 
+                asset.assignedTo !== '' &&
+                asset.assignedTo !== undefined
+              );
               setAssignedAssets(employeeAssets);
             } else {
               console.error('Error loading assigned assets:', result.message);
@@ -467,6 +526,17 @@ const EmployeeModal = ({ show, onHide, onSave, employee, employees = [], departm
             notes: ''
           });
           setAssignedAssets([]);
+          
+          // Reset handover data for new employee
+          setHandoverData({
+            handoverDate: '',
+            handoverTo: '',
+            handoverReason: '',
+            assetsToReturn: [],
+            notes: '',
+            handoverStatus: 'Pending'
+          });
+          setSelectedHandoverAssets([]);
         }
         setErrors({});
         setAssetErrors({});
@@ -476,6 +546,36 @@ const EmployeeModal = ({ show, onHide, onSave, employee, employees = [], departm
 
     loadEmployeeData();
   }, [show, employee]);
+
+  // Debug selectedHandoverAssets changes
+  useEffect(() => {
+    console.log('🔍 EmployeeModal: selectedHandoverAssets changed:', {
+      selectedHandoverAssets,
+      length: selectedHandoverAssets.length,
+      assignedAssetsLength: assignedAssets.length
+    });
+  }, [selectedHandoverAssets, assignedAssets]);
+
+  // Close handover dropdowns when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      const isHandoverToDropdown = event.target.closest('[data-dropdown="handover-to"]');
+      const isHandoverReasonDropdown = event.target.closest('[data-dropdown="handover-reason"]');
+      
+      if (!isHandoverToDropdown && !isHandoverReasonDropdown) {
+        setShowHandoverToDropdown(false);
+        setShowHandoverReasonDropdown(false);
+      }
+    };
+
+    if (show) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [show]);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -678,7 +778,7 @@ const EmployeeModal = ({ show, onHide, onSave, employee, employees = [], departm
   };
 
   const handleRemoveAssignedAsset = (assetId) => {
-    setAssignedAssets(prev => prev.filter(a => a.id !== assetId));
+    setAssignedAssets(prev => prev.filter(a => a.assetId !== assetId));
   };
 
   const clearAssetForm = () => {
@@ -703,6 +803,28 @@ const EmployeeModal = ({ show, onHide, onSave, employee, employees = [], departm
         hireDate: convertToBackendFormat(formData.hireDate),
         assignedAssets: [...assignedAssets, ...selectedAssets]
       };
+      
+      // Include handover details if status is Relieved or Terminated
+      if (formData.status === 'Relieved' || formData.status === 'Terminated') {
+        // Convert assetIds back to MongoDB ObjectIds for backend storage
+        const allAssets = [...assignedAssets, ...selectedAssets];
+        const handoverAssetMongoIds = selectedHandoverAssets.map(assetId => {
+          const asset = allAssets.find(a => a.assetId === assetId);
+          return asset ? asset.id : assetId; // Fallback to assetId if not found
+        });
+        
+        employeeData.handoverDetails = {
+          ...handoverData,
+          assetsToReturn: handoverAssetMongoIds,
+          handoverDate: new Date(handoverData.handoverDate).toISOString()
+        };
+        
+        console.log('🔍 EmployeeModal: Saving handover details:', {
+          selectedHandoverAssets,
+          handoverAssetMongoIds,
+          allAssetsCount: allAssets.length
+        });
+      }
       
       onSave(employeeData);
     }
@@ -1095,6 +1217,211 @@ const EmployeeModal = ({ show, onHide, onSave, employee, employees = [], departm
               </div>
             </div>
 
+            {/* Handover Details Section - Only show when status is Relieved or Terminated */}
+            {(formData.status === 'Relieved' || formData.status === 'Terminated') && (
+              <div className="bg-blue-50 rounded-xl p-6 mb-6 border border-blue-200">
+                <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                  <i className="fas fa-handshake text-blue-600"></i>
+                  Handover Details
+                </h3>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {/* Handover Date */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Handover Date *
+                    </label>
+                    <input
+                      type="date"
+                      name="handoverDate"
+                      value={handoverData.handoverDate}
+                      onChange={handleHandoverInputChange}
+                      className="w-full rounded-xl border border-gray-300 px-4 py-3 transition-all duration-300 text-gray-900 bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/50"
+                    />
+                  </div>
+
+                  {/* Handover To */}
+                  <div className="relative" data-dropdown="handover-to">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Handover To *
+                    </label>
+                    <div className="relative">
+                      <button
+                        type="button"
+                        className="w-full rounded-xl border border-gray-300 px-4 py-3 transition-all duration-300 text-gray-900 bg-white focus:border-gray-800 focus:ring-4 focus:ring-gray-800/10 text-left flex items-center justify-between"
+                        onClick={() => setShowHandoverToDropdown(!showHandoverToDropdown)}
+                      >
+                        <span className={handoverData.handoverTo ? 'text-gray-900' : 'text-gray-500'}>
+                          {handoverData.handoverTo || 'Select Employee'}
+                        </span>
+                        <i className={`fas fa-chevron-down transition-transform duration-200 ${showHandoverToDropdown ? 'rotate-180' : ''}`}></i>
+                      </button>
+                    </div>
+                    
+                    {showHandoverToDropdown && (
+                      <div 
+                        className="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto"
+                        style={{ zIndex: 9999 }}
+                      >
+                        <ul className="py-1">
+                          {employees.filter(emp => 
+                            emp.id !== employee?.id && 
+                            emp.status === 'Active'
+                          ).length > 0 ? (
+                            employees.filter(emp => 
+                              emp.id !== employee?.id && 
+                              emp.status === 'Active'
+                            ).map(emp => (
+                              <li key={emp.id}>
+                                <button
+                                  type="button"
+                                  onClick={() => handleHandoverToSelect(emp.name || `${emp.firstName} ${emp.lastName}`)}
+                                  className="w-full px-4 py-3 text-left hover:bg-gray-100 transition-colors duration-200 flex items-center gap-3"
+                                >
+                                  <i className="fas fa-user text-blue-600 w-4"></i>
+                                  <div>
+                                    <div className="font-medium text-gray-900">
+                                      {emp.name || `${emp.firstName} ${emp.lastName}`}
+                                    </div>
+                                    <div className="text-sm text-gray-500">{emp.employeeId}</div>
+                                  </div>
+                                </button>
+                              </li>
+                            ))
+                          ) : (
+                            <li>
+                              <div className="px-4 py-3 text-gray-500 text-center">
+                                <i className="fas fa-search text-gray-400 mb-2"></i>
+                                <p>No employees found</p>
+                              </div>
+                            </li>
+                          )}
+                        </ul>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Handover Reason */}
+                  <div className="relative" data-dropdown="handover-reason">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Handover Reason *
+                    </label>
+                    <div className="relative">
+                      <button
+                        type="button"
+                        className="w-full rounded-xl border border-gray-300 px-4 py-3 transition-all duration-300 text-gray-900 bg-white focus:border-gray-800 focus:ring-4 focus:ring-gray-800/10 text-left flex items-center justify-between"
+                        onClick={() => setShowHandoverReasonDropdown(!showHandoverReasonDropdown)}
+                      >
+                        <span className={handoverData.handoverReason ? 'text-gray-900' : 'text-gray-500'}>
+                          {handoverData.handoverReason || 'Select Reason'}
+                        </span>
+                        <i className={`fas fa-chevron-down transition-transform duration-200 ${showHandoverReasonDropdown ? 'rotate-180' : ''}`}></i>
+                      </button>
+                    </div>
+                    
+                    {showHandoverReasonDropdown && (
+                      <div 
+                        className="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg"
+                        style={{ zIndex: 9999 }}
+                      >
+                        <ul className="py-1">
+                          {['Resignation', 'Termination', 'Retirement', 'Transfer', 'Other'].map(reason => (
+                            <li key={reason}>
+                              <button
+                                type="button"
+                                onClick={() => handleHandoverReasonSelect(reason)}
+                                className="w-full px-4 py-3 text-left hover:bg-gray-100 transition-colors duration-200 flex items-center gap-3"
+                              >
+                                <i className={`${
+                                  reason === 'Resignation' ? 'fas fa-sign-out-alt text-blue-600' :
+                                  reason === 'Termination' ? 'fas fa-user-times text-red-600' :
+                                  reason === 'Retirement' ? 'fas fa-gift text-purple-600' :
+                                  reason === 'Transfer' ? 'fas fa-exchange-alt text-green-600' :
+                                  'fas fa-question-circle text-gray-600'
+                                } w-4`}></i>
+                                <span className="text-gray-900">{reason}</span>
+                              </button>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Handover Status */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Handover Status
+                    </label>
+                    <select
+                      name="handoverStatus"
+                      value={handoverData.handoverStatus}
+                      onChange={handleHandoverInputChange}
+                      className="w-full rounded-xl border border-gray-300 px-4 py-3 transition-all duration-300 text-gray-900 bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/50"
+                    >
+                      <option value="Pending">Pending</option>
+                      <option value="In Progress">In Progress</option>
+                      <option value="Completed">Completed</option>
+                      <option value="Partial">Partial</option>
+                    </select>
+                  </div>
+                </div>
+
+                {/* Returned Assets */}
+                {assignedAssets.length > 0 && (
+                  <div className="mt-6">
+                    <label className="block text-sm font-medium text-gray-700 mb-3">
+                      Returned Assets ({selectedHandoverAssets.length} selected)
+                    </label>
+                    <div className="border border-gray-300 rounded-xl p-4 max-h-48 overflow-y-auto bg-white">
+                      {assignedAssets.map(asset => (
+                        <div key={asset.id} className="flex items-center justify-between py-2 border-b border-gray-100 last:border-b-0">
+                          <div className="flex items-center space-x-3">
+                            <input
+                              type="checkbox"
+                              id={`handover-asset-${asset.assetId}`}
+                              checked={selectedHandoverAssets.includes(asset.assetId)}
+                              onChange={(e) => handleHandoverAssetSelection(asset.assetId, e.target.checked)}
+                              className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                            />
+                            <div>
+                              <label htmlFor={`handover-asset-${asset.assetId}`} className="font-medium text-gray-900 cursor-pointer">
+                                {asset.name}
+                              </label>
+                              <p className="text-sm text-gray-500">ID: {asset.assetId} | {asset.category}</p>
+                            </div>
+                          </div>
+                          <span className={`px-2 py-1 text-xs rounded-full ${
+                            asset.status === 'Active' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
+                          }`}>
+                            {asset.status}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                    <p className="text-sm text-gray-500 mt-2">
+                      Select assets that have been returned during handover
+                    </p>
+                  </div>
+                )}
+
+                {/* Handover Notes */}
+                <div className="mt-6">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Additional Notes
+                  </label>
+                  <textarea
+                    name="notes"
+                    value={handoverData.notes}
+                    onChange={handleHandoverInputChange}
+                    rows={4}
+                    className="w-full rounded-xl border border-gray-300 px-4 py-3 transition-all duration-300 text-gray-900 bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/50"
+                    placeholder="Enter any additional handover details, special instructions, or notes..."
+                  />
+                </div>
+              </div>
+            )}
+
             {/* Add New Asset Section */}
             <div className="bg-gray-50 rounded-xl p-6 mb-6">
               <h6 className="text-lg font-semibold text-gray-900 mb-4">Add New Asset</h6>
@@ -1312,34 +1639,46 @@ const EmployeeModal = ({ show, onHide, onSave, employee, employees = [], departm
 
             {/* Assets for this Employee Section */}
             <div className="bg-gray-50 rounded-xl p-6 mb-6">
-              <h6 className="text-lg font-semibold text-gray-900 mb-4">Assets for this Employee</h6>
+              <h6 className="text-lg font-semibold text-gray-900 mb-4">
+                Assets for this Employee ({assignedAssets.filter(asset => !selectedHandoverAssets.includes(asset.assetId)).length} remaining)
+              </h6>
               <div className="space-y-3">
-                {assignedAssets.length === 0 ? (
-                  <div className="text-center py-4">
-                    <p className="text-gray-500 mb-2">No assets added yet.</p>
-                    <p className="text-gray-500 text-sm">
-                      <i className="fas fa-info-circle mr-1"></i>
-                      Assets created above will be assigned to this employee when saved.
-                    </p>
-                  </div>
-                ) : (
-                  assignedAssets.map((asset, index) => (
-                    <div key={index} className="flex items-center justify-between p-4 bg-white rounded-lg border border-gray-200">
-                      <div className="flex-1">
-                        <h6 className="font-medium text-gray-900">{asset.name}</h6>
-                        <p className="text-sm text-gray-600">{asset.category} • {asset.status}</p>
+                {(() => {
+                  const filteredAssets = assignedAssets.filter(asset => {
+                    // Use assetId for comparison since that's what we're storing in handover details
+                    const isInHandover = selectedHandoverAssets.includes(asset.assetId);
+                    return !isInHandover;
+                  });
+                  
+                  if (filteredAssets.length === 0) {
+                    return (
+                      <div className="text-center py-4">
+                        <p className="text-gray-500 mb-2">No assets added yet.</p>
+                        <p className="text-gray-500 text-sm">
+                          <i className="fas fa-info-circle mr-1"></i>
+                          Assets created above will be assigned to this employee when saved.
+                        </p>
                       </div>
-                      <button
-                        type="button"
-                        onClick={() => handleRemoveAssignedAsset(asset.id)}
-                        className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors duration-200"
-                        title="Remove Asset"
-                      >
-                        <i className="fas fa-times"></i>
-                      </button>
-                    </div>
-                  ))
-                )}
+                    );
+                  } else {
+                    return filteredAssets.map((asset, index) => (
+                      <div key={index} className="flex items-center justify-between p-4 bg-white rounded-lg border border-gray-200">
+                        <div className="flex-1">
+                          <h6 className="font-medium text-gray-900">{asset.name}</h6>
+                          <p className="text-sm text-gray-600">{asset.category} • {asset.status}</p>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveAssignedAsset(asset.assetId)}
+                          className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors duration-200"
+                          title="Remove Asset"
+                        >
+                          <i className="fas fa-times"></i>
+                        </button>
+                      </div>
+                    ));
+                  }
+                })()}
               </div>
             </div>
 
@@ -1350,6 +1689,7 @@ const EmployeeModal = ({ show, onHide, onSave, employee, employees = [], departm
                 {availableAssets.length === 0 ? (
                   <div className="text-center py-4">
                     <p className="text-gray-500">No available assets to assign.</p>
+                    <p className="text-xs text-gray-400 mt-2">Debug: availableAssets.length = {availableAssets.length}</p>
                   </div>
                 ) : (
                   availableAssets.map((asset) => (
@@ -1390,16 +1730,6 @@ const EmployeeModal = ({ show, onHide, onSave, employee, employees = [], departm
           </div>
         </form>
       </div>
-
-      {/* Handover Modal */}
-      <HandoverModal
-        show={showHandoverModal}
-        onHide={handleHandoverCancel}
-        onSave={handleHandoverSave}
-        employee={employee}
-        employees={employees}
-        assets={assignedAssets}
-      />
     </div>
   );
 };

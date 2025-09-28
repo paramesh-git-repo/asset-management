@@ -545,7 +545,7 @@ const Settings = () => {
                     <button 
                       onClick={handleSaveSettings}
                       disabled={isSaving}
-                      className="px-6 py-3 rounded-xl font-medium transition-all duration-300 border-none bg-accent-primary text-white shadow-theme-md hover-accent hover:transform hover:-translate-y-1 hover:shadow-theme-lg group disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="px-6 py-3 rounded-xl font-medium transition-all duration-300 border-none bg-black text-white shadow-theme-md hover:bg-gray-800 hover:transform hover:-translate-y-1 hover:shadow-theme-lg group disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       <i className={`fas ${isSaving ? 'fa-spinner fa-spin' : 'fa-save'} mr-2 group-hover:animate-bounce`}></i>
                       {isSaving ? 'Saving...' : 'Save General Settings'}
@@ -644,7 +644,7 @@ const Settings = () => {
                   <button 
                     onClick={handleSaveSettings}
                     disabled={isSaving}
-                    className="px-6 py-3 rounded-xl font-medium transition-all duration-300 border-none bg-accent-primary text-white shadow-theme-md hover-accent hover:transform hover:-translate-y-1 hover:shadow-theme-lg group disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="px-6 py-3 rounded-xl font-medium transition-all duration-300 border-none bg-black text-white shadow-theme-md hover:bg-gray-800 hover:transform hover:-translate-y-1 hover:shadow-theme-lg group disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     <i className={`fas ${isSaving ? 'fa-spinner fa-spin' : 'fa-save'} mr-2 group-hover:animate-bounce`}></i>
                     {isSaving ? 'Saving...' : 'Save Appearance Settings'}
@@ -693,7 +693,7 @@ const Settings = () => {
                   <button 
                     onClick={handleSaveSettings}
                     disabled={isSaving}
-                    className="px-6 py-3 rounded-xl font-medium transition-all duration-300 border-none bg-accent-primary text-white shadow-theme-md hover-accent hover:transform hover:-translate-y-1 hover:shadow-theme-lg group disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="px-6 py-3 rounded-xl font-medium transition-all duration-300 border-none bg-black text-white shadow-theme-md hover:bg-gray-800 hover:transform hover:-translate-y-1 hover:shadow-theme-lg group disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     <i className={`fas ${isSaving ? 'fa-spinner fa-spin' : 'fa-save'} mr-2 group-hover:animate-bounce`}></i>
                     {isSaving ? 'Saving...' : 'Save Security Settings'}
@@ -753,7 +753,7 @@ const Settings = () => {
                       />
                       <label 
                         htmlFor="profilePicture"
-                        className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200 cursor-pointer inline-block"
+                        className="px-4 py-2 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors duration-200 cursor-pointer inline-block"
                       >
                         <i className="fas fa-upload mr-2"></i>Upload Photo
                       </label>
@@ -764,7 +764,7 @@ const Settings = () => {
                             setProfile(prev => ({ ...prev, avatar: null }));
                             updateProfile({ avatar: null });
                           }}
-                          className="mt-2 px-3 py-1 bg-red-500 text-white rounded text-sm hover:bg-red-600 transition-colors duration-200"
+                          className="mt-2 px-3 py-1 bg-black text-white rounded text-sm hover:bg-gray-800 transition-colors duration-200"
                         >
                           <i className="fas fa-trash mr-1"></i>Remove
                         </button>
@@ -1005,7 +1005,7 @@ const Settings = () => {
                       </div>
                       <button
                         onClick={() => setShowPasswordSection(!showPasswordSection)}
-                        className="px-4 py-2 bg-gray-800 text-white rounded-lg hover:bg-gray-700 transition-colors duration-200"
+                        className="px-4 py-2 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors duration-200"
                       >
                         <i className={`fas ${showPasswordSection ? 'fa-chevron-up' : 'fa-chevron-down'} mr-2`}></i>
                         {showPasswordSection ? 'Hide' : 'Change Password'}
@@ -1117,7 +1117,7 @@ const Settings = () => {
                           <button
                             onClick={handlePasswordChange}
                             disabled={isChangingPassword}
-                            className="px-6 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="px-6 py-2 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                           >
                             <i className={`fas ${isChangingPassword ? 'fa-spinner fa-spin' : 'fa-key'} mr-2`}></i>
                             {isChangingPassword ? 'Changing...' : 'Change Password'}
@@ -1129,7 +1129,7 @@ const Settings = () => {
                               setPasswordErrors({});
                               setShowPasswords({ currentPassword: false, newPassword: false, confirmPassword: false });
                             }}
-                            className="px-6 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition-colors duration-200"
+                            className="px-6 py-2 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors duration-200"
                           >
                             Cancel
                           </button>
@@ -1167,7 +1167,7 @@ const Settings = () => {
                     <p className="text-sm text-blue-700 mb-3">Download all your data as an Excel file (.xlsx) for backup purposes.</p>
                     <button
                       onClick={exportData}
-                      className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200"
+                      className="px-4 py-2 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors duration-200"
                     >
                       <i className="fas fa-download mr-2"></i>Export Data
                     </button>

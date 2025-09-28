@@ -71,7 +71,9 @@ const ViewAssetModal = ({ show, onHide, asset, employees, onUpdate }) => {
     switch(status) {
       case 'Active': return 'bg-green-100 text-green-800';
       case 'Maintenance': return 'bg-yellow-100 text-yellow-800';
-      case 'Retired': return 'bg-red-100 text-red-800';
+      case 'Repaired': return 'bg-blue-100 text-blue-800';
+      case 'Available': return 'bg-purple-100 text-purple-800';
+      case 'Lost': return 'bg-red-100 text-red-800';
       default: return 'bg-gray-100 text-gray-800';
     }
   };
@@ -80,7 +82,9 @@ const ViewAssetModal = ({ show, onHide, asset, employees, onUpdate }) => {
     switch(status) {
       case 'Active': return 'fas fa-check-circle text-green-600';
       case 'Maintenance': return 'fas fa-tools text-yellow-600';
-      case 'Retired': return 'fas fa-times-circle text-red-600';
+      case 'Repaired': return 'fas fa-wrench text-blue-600';
+      case 'Available': return 'fas fa-hand-holding text-purple-600';
+      case 'Lost': return 'fas fa-exclamation-triangle text-red-600';
       default: return 'fas fa-question-circle text-gray-600';
     }
   };

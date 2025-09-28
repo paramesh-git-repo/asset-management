@@ -94,7 +94,7 @@ router.post('/login', validateLogin, async (req, res) => {
         role: user.role 
       },
       process.env.JWT_SECRET,
-      { expiresIn: '24h' }
+      { expiresIn: '30m' }
     );
 
     console.log("✅ Login successful for user:", user.email, "Role:", user.role);
@@ -178,7 +178,7 @@ router.post('/register', validateRegister, async (req, res) => {
         role: user.role 
       },
       process.env.JWT_SECRET,
-      { expiresIn: '24h' }
+      { expiresIn: '30m' }
     );
 
     // Return user data without password
@@ -442,6 +442,194 @@ router.put('/users/:id/role', authenticateToken, requireAdmin, async (req, res) 
   }
 });
 
+// Get specific user by ID (Admin only)
+router.get('/users/:id', authenticateToken, requireAdmin, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const user = await User.findById(id).select('-password');
+    
+    if (!user) {
+      return res.status(404).json({
+        status: 'error',
+        message: 'User not found'
+      });
+    }
+
+    res.json({
+      status: 'success',
+      data: { user }
+    });
+  } catch (error) {
+    console.error('Get user error:', error);
+    res.status(500).json({
+      status: 'error',
+      message: 'Internal server error'
+    });
+  }
+});
+
+// Update user (Admin only)
+router.put('/users/:id', authenticateToken, requireAdmin, [
+  body('username').optional().trim().isLength({ min: 3, max: 30 }).withMessage('Username must be between 3 and 30 characters'),
+  body('email').optional().isEmail().withMessage('Valid email is required'),
+  body('password').optional().isLength({ min: 6 }).withMessage('Password must be at least 6 characters'),
+  body('firstName').optional().trim().isLength({ min: 1, max: 50 }).withMessage('First name must be less than 50 characters'),
+  body('lastName').optional().trim().isLength({ min: 1, max: 50 }).withMessage('Last name must be less than 50 characters'),
+  body('role').optional().isIn(['Admin', 'Manager', 'Employee']).withMessage('Invalid role')
+], async (req, res) => {
+  try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({
+        status: 'error',
+        message: 'Validation failed',
+        errors: errors.array()
+      });
+    }
+
+    const { id } = req.params;
+    const { username, email, password, firstName, lastName, role, department, position } = req.body;
+
+    const user = await User.findById(id);
+    
+    if (!user) {
+      return res.status(404).json({
+        status: 'error',
+        message: 'User not found'
+      });
+    }
+
+    // Check if email/username already exists for another user
+    if (email && email !== user.email) {
+      const existingUser = await User.findOne({ email });
+      if (existingUser) {
+        return res.status(400).json({
+          status: 'error',
+          message: 'Email already exists'
+        });
+      }
+    }
+
+    if (username && username !== user.username) {
+      const existingUser = await User.findOne({ username });
+      if (existingUser) {
+        return res.status(400).json({
+          status: 'error',
+          message: 'Username already exists'
+        });
+      }
+    }
+
+    // Update fields
+    if (username) user.username = username;
+    if (email) user.email = email;
+    if (password) user.password = password;
+    if (firstName) user.firstName = firstName;
+    if (lastName) user.lastName = lastName;
+    if (role) {
+      user.role = role;
+      user.permissions = getDefaultPermissions(role);
+    }
+    if (department !== undefined) user.department = department;
+    if (position !== undefined) user.position = position;
+
+    await user.save();
+
+    // Return updated user data without password
+    const userData = {
+      id: user._id,
+      username: user.username,
+      email: user.email,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      role: user.role,
+      permissions: user.permissions,
+      department: user.department,
+      position: user.position,
+      isActive: user.isActive
+    };
+
+    res.json({
+      status: 'success',
+      message: 'User updated successfully',
+      data: { user: userData }
+    });
+  } catch (error) {
+    console.error('Update user error:', error);
+    res.status(500).json({
+      status: 'error',
+      message: 'Internal server error'
+    });
+  }
+});
+
+// Delete user (Admin only)
+router.delete('/users/:id', authenticateToken, requireAdmin, async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const user = await User.findById(id);
+    
+    if (!user) {
+      return res.status(404).json({
+        status: 'error',
+        message: 'User not found'
+      });
+    }
+
+    // Don't allow admin to delete themselves
+    if (user._id.toString() === req.user._id.toString()) {
+      return res.status(400).json({
+        status: 'error',
+        message: 'Cannot delete your own account'
+      });
+    }
+
+    await User.findByIdAndDelete(id);
+
+    res.json({
+      status: 'success',
+      message: 'User deleted successfully'
+    });
+  } catch (error) {
+    console.error('Delete user error:', error);
+    res.status(500).json({
+      status: 'error',
+      message: 'Internal server error'
+    });
+  }
+});
+
+// Activate user (Admin only)
+router.put('/users/:id/activate', authenticateToken, requireAdmin, async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const user = await User.findById(id);
+    
+    if (!user) {
+      return res.status(404).json({
+        status: 'error',
+        message: 'User not found'
+      });
+    }
+
+    user.isActive = true;
+    await user.save();
+
+    res.json({
+      status: 'success',
+      message: 'User activated successfully'
+    });
+  } catch (error) {
+    console.error('Activate user error:', error);
+    res.status(500).json({
+      status: 'error',
+      message: 'Internal server error'
+    });
+  }
+});
+
 // Deactivate user (Admin only)
 router.put('/users/:id/deactivate', authenticateToken, requireAdmin, async (req, res) => {
   try {
@@ -465,6 +653,48 @@ router.put('/users/:id/deactivate', authenticateToken, requireAdmin, async (req,
     });
   } catch (error) {
     console.error('Deactivate user error:', error);
+    res.status(500).json({
+      status: 'error',
+      message: 'Internal server error'
+    });
+  }
+});
+
+// Reset user password (Admin only)
+router.put('/reset-password/:id', authenticateToken, requireAdmin, [
+  body('newPassword').isLength({ min: 8 }).withMessage('New password must be at least 8 characters long')
+], async (req, res) => {
+  try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({
+        status: 'error',
+        message: 'Validation failed',
+        errors: errors.array()
+      });
+    }
+
+    const { id } = req.params;
+    const { newPassword } = req.body;
+
+    const user = await User.findById(id);
+    
+    if (!user) {
+      return res.status(404).json({
+        status: 'error',
+        message: 'User not found'
+      });
+    }
+
+    user.password = newPassword;
+    await user.save();
+
+    res.json({
+      status: 'success',
+      message: 'Password reset successfully'
+    });
+  } catch (error) {
+    console.error('Reset password error:', error);
     res.status(500).json({
       status: 'error',
       message: 'Internal server error'

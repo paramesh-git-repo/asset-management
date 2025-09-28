@@ -150,6 +150,25 @@ const Employees = () => {
       // Handle asset assignment
       const { assignedAssets, ...employeeInfo } = employeeData;
       
+      // Handle handover asset unassignment first (only for Relieved/Terminated employees)
+      if ((employeeInfo.status === 'Relieved' || employeeInfo.status === 'Terminated') && 
+          employeeInfo.handoverDetails && employeeInfo.handoverDetails.assetsToReturn && employeeInfo.handoverDetails.assetsToReturn.length > 0) {
+        console.log('🔍 Unassigning assets for handover:', employeeInfo.handoverDetails.assetsToReturn);
+        
+        for (const assetId of employeeInfo.handoverDetails.assetsToReturn) {
+          try {
+            await dataService.updateAsset(assetId, {
+              assignedTo: null,
+              assignedDate: null,
+              updatedAt: new Date().toISOString()
+            });
+            console.log(`✅ Asset ${assetId} unassigned successfully for handover`);
+          } catch (error) {
+            console.error(`❌ Error unassigning asset ${assetId} for handover:`, error);
+          }
+        }
+      }
+      
       // Assign assets to employee if any were selected
       if (assignedAssets && assignedAssets.length > 0) {
         for (const asset of assignedAssets) {

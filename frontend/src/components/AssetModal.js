@@ -435,8 +435,12 @@ const AssetModal = ({ show, onHide, onSave, asset, categories, statuses, employe
         return { icon: 'fas fa-times-circle', color: 'text-red-600' };
       case 'Maintenance':
         return { icon: 'fas fa-tools', color: 'text-yellow-600' };
-      case 'Retired':
-        return { icon: 'fas fa-trash', color: 'text-gray-600' };
+      case 'Repaired':
+        return { icon: 'fas fa-wrench', color: 'text-blue-600' };
+      case 'Available':
+        return { icon: 'fas fa-hand-holding', color: 'text-purple-600' };
+      case 'Lost':
+        return { icon: 'fas fa-exclamation-triangle', color: 'text-red-600' };
       default:
         return { icon: 'fas fa-circle', color: 'text-gray-600' };
     }

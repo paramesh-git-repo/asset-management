@@ -375,6 +375,8 @@ const Assets = () => {
       case 'Active': return 'bg-gradient-to-r from-green-100 to-green-200 text-green-800 border border-green-300 shadow-sm';
       case 'Maintenance': return 'bg-gradient-to-r from-yellow-100 to-yellow-200 text-yellow-800 border border-yellow-300 shadow-sm';
       case 'Repaired': return 'bg-gradient-to-r from-green-100 to-green-200 text-green-800 border border-green-300 shadow-sm';
+      case 'Available': return 'bg-gradient-to-r from-purple-100 to-purple-200 text-purple-800 border border-purple-300 shadow-sm';
+      case 'Lost': return 'bg-gradient-to-r from-red-100 to-red-200 text-red-800 border border-red-300 shadow-sm';
       default: return 'bg-gradient-to-r from-gray-100 to-gray-200 text-gray-800 border border-gray-300 shadow-sm';
     }
   };
@@ -483,7 +485,7 @@ const Assets = () => {
   ];
 
   // Combine default and custom statuses
-  const defaultStatuses = ['Active', 'Inactive', 'Maintenance', 'Repaired'];
+  const defaultStatuses = ['Active', 'Inactive', 'Maintenance', 'Repaired', 'Available', 'Lost'];
 
   // Get removed defaults
   const { removedCategories, removedStatuses } = getRemovedDefaults();
