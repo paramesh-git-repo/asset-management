@@ -25,15 +25,16 @@ app.use(compression());
 
 // CORS configuration
 app.use(cors({
-  origin: process.env.CORS_ORIGIN || [
-    'http://localhost:3000', 
-    'https://your-frontend-domain.com',
-    'http://asset-management-react-paramesh.s3-website-us-east-1.amazonaws.com',
-    'https://asset-management-react-paramesh.s3-website-us-east-1.amazonaws.com'
+  origin: [
+    "http://localhost:3000",  // Local dev frontend
+    "http://asset-management-react-paramesh.s3-website-us-east-1.amazonaws.com", // S3 hosting (http)
+    "https://asset-management-react-paramesh.s3-website-us-east-1.amazonaws.com", // S3 hosting (https if SSL added)
+    "https://d1yigrn7s04vaz.cloudfront.net" // CloudFront distribution URL
+    // Add "https://www.assetmanagementapp.com" here later when you map a Route53 domain
   ],
   credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization']
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"]
 }));
 
 // Body parsing middleware
