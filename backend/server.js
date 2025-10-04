@@ -22,21 +22,27 @@ const PORT = process.env.PORT || 5002;
 app.use(helmet());
 app.use(compression());
 
-// ✅ CORS setup
-app.use(cors({
-  origin: [
-    "http://localhost:3000",
-    "http://asset-management-react-paramesh.s3-website-us-east-1.amazonaws.com",
-    "https://asset-management-react-paramesh.s3-website-us-east-1.amazonaws.com",
-    "https://d1yigrn7s04vaz.cloudfront.net",
-    "https://d1yigrn7s04vaz.cloudfront.net"
-    // Add future custom domains here
-  ],
-  credentials: true,
-  methods: ["GET","POST","PUT","DELETE","OPTIONS"],
-  allowedHeaders: ["Content-Type","Authorization"]
-}));
+// ✅ CORS setup (dynamic based on env variable)
+const allowedOrigins = [
+  "http://localhost:3000", // local dev
+  "https://axess-asset-management.netlify.app", // Netlify frontend
+  process.env.REACT_APP_FRONTEND_URL || "", // CloudFront (from .env / EB env vars)
+  process.env.CORS_ORIGIN || "" // Additional CORS origins from env
+].filter(Boolean); // Remove empty strings
 
+app.use(cors({
+  origin: function (origin, callback) {
+    // allow requests with no origin (like mobile apps or curl) or whitelisted origins
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error(`CORS not allowed for origin: ${origin}`));
+    }
+  },
+  credentials: true,
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"]
+}));
 // Body parser
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
