@@ -26,7 +26,8 @@ app.use(compression());
 const allowedOrigins = [
   "http://localhost:3000", // local dev
   "https://axess-asset-management.netlify.app", // Netlify frontend
-  process.env.REACT_APP_FRONTEND_URL || "", // CloudFront (from .env / EB env vars)
+  "https://d1yigrn7s04vaz.cloudfront.net", // CloudFront frontend
+  process.env.REACT_APP_FRONTEND_URL || "", // Additional frontend URLs from env
   process.env.CORS_ORIGIN || "" // Additional CORS origins from env
 ].filter(Boolean); // Remove empty strings
 
