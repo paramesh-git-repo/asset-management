@@ -1,15 +1,30 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, Suspense, lazy, useState } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import ProtectedRoute from './components/ProtectedRoute';
 import Sidebar from './components/Sidebar';
 import Header from './components/Header';
 import Auth from './components/Auth';
+import Preloader from './components/Preloader';
+import EnhancedLoader from './components/EnhancedLoader';
+
+// ✅ Dashboard loads immediately (critical for first impression)
 import Dashboard from './pages/Dashboard';
-import Assets from './pages/Assets';
-import Employees from './pages/Employees';
-import Timeline from './pages/Timeline';
-import Settings from './pages/Settings';
+
+// ✅ Lazy load other pages (load only when needed)
+const Assets = lazy(() => import('./pages/Assets'));
+const Employees = lazy(() => import('./pages/Employees'));
+const Timeline = lazy(() => import('./pages/Timeline'));
+const Settings = lazy(() => import('./pages/Settings'));
+
+// ✅ Enhanced loading component for lazy-loaded pages
+const PageLoader = ({ message = "Loading page..." }) => (
+  <EnhancedLoader 
+    message={message}
+    size="medium"
+    showProgress={false}
+  />
+);
 
 
 // Main App Content Component
@@ -17,6 +32,7 @@ function AppContent() {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
+  const [preloadComplete, setPreloadComplete] = useState(false);
 
   // Get current page from the URL path
   const getCurrentPage = () => {
@@ -90,6 +106,9 @@ function AppContent() {
   // Show main app if authenticated
   return (
     <div className="app-layout">
+      {/* ✅ Preload other pages in background after dashboard loads */}
+      {user && <Preloader onPreloadComplete={() => setPreloadComplete(true)} />}
+      
       <Sidebar 
         currentPage={getCurrentPage()}
         onPageChange={() => {}} // No longer needed since Sidebar handles navigation directly
@@ -102,29 +121,44 @@ function AppContent() {
           <Routes>
             <Route path="/" element={<Navigate to="/dashboard" replace />} />
             <Route path="/login" element={<Navigate to="/dashboard" replace />} />
+            
+            {/* ✅ Dashboard loads immediately - no lazy loading needed */}
             <Route path="/dashboard" element={
               <ProtectedRoute>
                 <Dashboard />
               </ProtectedRoute>
             } />
+            
+            {/* ✅ Lazy-loaded pages with Suspense and contextual messages */}
             <Route path="/assets" element={
               <ProtectedRoute>
-                <Assets />
+                <Suspense fallback={<PageLoader message="Loading Assets..." />}>
+                  <Assets />
+                </Suspense>
               </ProtectedRoute>
             } />
+            
             <Route path="/employees" element={
               <ProtectedRoute>
-                <Employees />
+                <Suspense fallback={<PageLoader message="Loading Employees..." />}>
+                  <Employees />
+                </Suspense>
               </ProtectedRoute>
             } />
+            
             <Route path="/timeline" element={
               <ProtectedRoute>
-                <Timeline />
+                <Suspense fallback={<PageLoader message="Loading Timeline..." />}>
+                  <Timeline />
+                </Suspense>
               </ProtectedRoute>
             } />
+            
             <Route path="/settings" element={
               <ProtectedRoute>
-                <Settings />
+                <Suspense fallback={<PageLoader message="Loading Settings..." />}>
+                  <Settings />
+                </Suspense>
               </ProtectedRoute>
             } />
           </Routes>

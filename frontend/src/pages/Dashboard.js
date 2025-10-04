@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { Line, Doughnut } from 'react-chartjs-2';
 import {
   Chart as ChartJS,
@@ -15,6 +15,7 @@ import {
 } from 'chart.js';
 import dataService from '../services/dataService';
 
+// ✅ Register Chart.js components once (moved outside component for performance)
 ChartJS.register(
   CategoryScale,
   LinearScale,
@@ -137,15 +138,17 @@ const Dashboard = () => {
     loadData();
   }, []);
 
-  const getRandomColor = () => {
+  // ✅ Memoized color generation for better performance
+  const getRandomColor = useCallback(() => {
     const colors = [
       '#3B82F6', '#10B981', '#F59E0B', '#EF4444', 
       '#8B5CF6', '#06B6D4', '#84CC16', '#F97316'
     ];
     return colors[Math.floor(Math.random() * colors.length)];
-  };
+  }, []);
 
-  const assetPerformanceData = {
+  // ✅ Memoized chart data to prevent unnecessary re-renders
+  const assetPerformanceData = useMemo(() => ({
     labels: dashboardData.performance.labels,
     datasets: [
       {
@@ -157,9 +160,9 @@ const Dashboard = () => {
         fill: true
       }
     ]
-  };
+  }), [dashboardData.performance.labels, dashboardData.performance.data]);
 
-  const categoryDistributionData = {
+  const categoryDistributionData = useMemo(() => ({
     labels: Object.keys(dashboardData.categories),
     datasets: [
       {
@@ -168,9 +171,9 @@ const Dashboard = () => {
         borderWidth: 0
       }
     ]
-  };
+  }), [dashboardData.categories]);
 
-  const assetStatusData = {
+  const assetStatusData = useMemo(() => ({
     labels: ['Active', 'Maintenance', 'Retired'],
     datasets: [
       {
@@ -183,7 +186,7 @@ const Dashboard = () => {
         borderWidth: 0
       }
     ]
-  };
+  }), [dashboardData.assets.active, dashboardData.assets.maintenance, dashboardData.assets.retired]);
 
   if (loading) {
     return (
