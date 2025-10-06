@@ -177,6 +177,24 @@ export const AuthProvider = ({ children }) => {
 
       if (response.ok && data.status === 'success' && data.data.token) {
         const userData = data.data.user;
+        // ✅ Overlay avatar from local storage if backend doesn't provide it
+        const storedAvatar = localStorage.getItem('user_avatar');
+        if (storedAvatar) {
+          userData.avatar = storedAvatar;
+        } else {
+          // As a fallback, check settings.profile.avatar
+          try {
+            const savedSettings = localStorage.getItem('settings');
+            if (savedSettings) {
+              const settingsObj = JSON.parse(savedSettings);
+              const settingsAvatar = settingsObj?.profile?.avatar;
+              if (settingsAvatar) {
+                userData.avatar = settingsAvatar;
+                localStorage.setItem('user_avatar', settingsAvatar);
+              }
+            }
+          } catch {}
+        }
         console.log('Login successful:', userData);
         
         // Store token and user data
@@ -247,7 +265,6 @@ export const AuthProvider = ({ children }) => {
     // Clear authentication data
     localStorage.removeItem('user');
     localStorage.removeItem('token');
-    localStorage.removeItem('user_avatar');
     // Reload page to reset all state
     window.location.reload();
   };
