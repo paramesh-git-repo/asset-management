@@ -126,9 +126,12 @@ const Settings = () => {
         }
         if (settings.profile) {
           // Load saved profile data
+          const storedAvatar = localStorage.getItem('user_avatar');
           setProfile(prev => ({
             ...prev,
-            ...settings.profile
+            ...settings.profile,
+            // Prefer the most recent avatar stored separately
+            avatar: storedAvatar || settings.profile.avatar || prev.avatar
           }));
         }
         if (settings.security) {
@@ -293,21 +296,63 @@ const Settings = () => {
 
   const handleProfilePictureUpload = (event) => {
     const file = event.target.files[0];
-    if (file) {
-      if (file.size > 10 * 1024 * 1024) { // 10MB limit
-        alert('File size must be less than 10MB');
-        return;
-      }
-      
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        const avatarData = e.target.result;
-        setProfile(prev => ({ ...prev, avatar: avatarData }));
-        // Update auth context immediately
-        updateProfile({ avatar: avatarData });
-      };
-      reader.readAsDataURL(file);
+    if (!file) return;
+    if (file.size > 10 * 1024 * 1024) { // 10MB limit
+      alert('File size must be less than 10MB');
+      return;
     }
+
+    const reader = new FileReader();
+    reader.onload = async (e) => {
+      const img = new Image();
+      img.onload = async () => {
+        // Resize/compress to reduce localStorage usage
+        const canvas = document.createElement('canvas');
+        const maxDim = 256; // Max width/height
+        let { width, height } = img;
+        if (width > height) {
+          if (width > maxDim) {
+            height = Math.round((height * maxDim) / width);
+            width = maxDim;
+          }
+        } else {
+          if (height > maxDim) {
+            width = Math.round((width * maxDim) / height);
+            height = maxDim;
+          }
+        }
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, width, height);
+        // Use JPEG with quality to keep under quota
+        const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.7);
+
+        setProfile(prev => ({ ...prev, avatar: compressedDataUrl }));
+        try {
+          // Update auth/user stores
+          updateProfile({ avatar: compressedDataUrl });
+          // Keep settings.profile.avatar in sync so it persists across refresh
+          const saved = localStorage.getItem('settings');
+          if (saved) {
+            const settingsObj = JSON.parse(saved);
+            const nextSettings = {
+              ...settingsObj,
+              profile: {
+                ...(settingsObj.profile || {}),
+                avatar: compressedDataUrl
+              }
+            };
+            localStorage.setItem('settings', JSON.stringify(nextSettings));
+          }
+        } catch (err) {
+          console.warn('Avatar update failed:', err);
+          alert('Could not save profile picture due to storage limits. Try a smaller image.');
+        }
+      };
+      img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
   };
 
 

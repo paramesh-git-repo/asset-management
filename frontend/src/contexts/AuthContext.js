@@ -62,6 +62,11 @@ export const AuthProvider = ({ children }) => {
     if (savedUser) {
       try {
         const userData = JSON.parse(savedUser);
+        // Prefer latest avatar stored separately
+        const storedAvatar = localStorage.getItem('user_avatar');
+        if (storedAvatar) {
+          userData.avatar = storedAvatar;
+        }
         setUser(userData);
         console.log('✅ AuthContext: User loaded from localStorage');
         setLoading(false);
@@ -94,6 +99,11 @@ export const AuthProvider = ({ children }) => {
       if (response.ok) {
         const data = await response.json();
         const userData = data.data.user;
+        // Overlay with locally stored avatar if present (client preference)
+        const storedAvatar = localStorage.getItem('user_avatar');
+        if (storedAvatar) {
+          userData.avatar = storedAvatar;
+        }
         setUser(userData);
         localStorage.setItem('user', JSON.stringify(userData));
         console.log('✅ AuthContext: User fetched from backend');
@@ -237,6 +247,7 @@ export const AuthProvider = ({ children }) => {
     // Clear authentication data
     localStorage.removeItem('user');
     localStorage.removeItem('token');
+    localStorage.removeItem('user_avatar');
     // Reload page to reset all state
     window.location.reload();
   };
@@ -245,8 +256,30 @@ export const AuthProvider = ({ children }) => {
     if (user) {
       const updatedUser = { ...user, ...profileData };
       setUser(updatedUser);
-      // Persist the updated user data to localStorage
-      localStorage.setItem('user', JSON.stringify(updatedUser));
+      try {
+        // Attempt to persist full user (including avatar)
+        localStorage.setItem('user', JSON.stringify(updatedUser));
+        // If avatar provided, also keep a separate, replaceable copy
+        if (typeof profileData.avatar === 'string') {
+          localStorage.setItem('user_avatar', profileData.avatar);
+        } else if (profileData.avatar === null) {
+          localStorage.removeItem('user_avatar');
+        }
+      } catch (e) {
+        // Fallback: strip avatar from the main user record to avoid quota issues
+        try {
+          const { avatar, ...rest } = updatedUser;
+          localStorage.setItem('user', JSON.stringify(rest));
+          if (typeof profileData.avatar === 'string') {
+            localStorage.setItem('user_avatar', profileData.avatar);
+          } else if (profileData.avatar === null) {
+            localStorage.removeItem('user_avatar');
+          }
+        } catch (innerErr) {
+          // As a last resort, do nothing; state still holds the avatar for this session
+          console.warn('⚠️ Unable to persist user updates to localStorage:', innerErr);
+        }
+      }
     }
   };
 

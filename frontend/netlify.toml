@@ -16,7 +16,7 @@
   NODE_ENV = "production"
   
   # API URL - Update with your Render backend URL
-  REACT_APP_API_URL = "https://your-render-app.onrender.com/api"
+  REACT_APP_API_URL = "https://asset-management-vdqh.onrender.com/api"
   
   # Feature flags
   REACT_APP_ENABLE_LOGGING = "false"
